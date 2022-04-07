@@ -7,6 +7,8 @@ You need to install the requirements for you platform before being able to run i
 
 This scraper uses its own database, which has been compiled from many sources on the net and keeps extending. If this is a problem for you, do not run this software.
 
+This scraper will create a local DB with the checksum of your roms, for purposes of speed if you have large files. If this is a problem for you, do not run this software.
+
 ## Running the software:
 
 ### From source:
