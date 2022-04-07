@@ -51,5 +51,59 @@ last but not least, the =Configuration= tab, allows you to configure the tool to
 
 ![image](https://user-images.githubusercontent.com/32246591/162164152-a4cfd3bf-bdf8-4005-bcf0-132c5f2a9eb7.png)
 
+### Configuatrion items:
+
+#### Systems File: 
+
+Location of the, usually called, es_systems.cfg file, this is the emulation station file that holds the information for the systems ands roms directories you have set up. it is similar to the _ _'--systemsfile'_ _ option in the _ _'--cli'_ _ version. By default Retroscraper will try to locate it in the usual directories, if unsuccesfull it will be left blank.
+
+#### Systems Roms Path:
+
+This will tell you where your roms are located according to your _ _es_systems.cfg_ _ file. If you're importing this file from a machine in your network, it will actually show wwhere they are in that machine.
+
+#### Map To Path:
+
+This will allow you to map the previous path to a path in your local machine, so if you mount the remote machine rom's directory into the machine executing retroscraper, retroscraper will be able to access the roms on the remote machine as if they were local.
+
+#### Name Decorators:
+
+The following options allow you to add 'decorators' to the name taht is going to be displayed in your system, for example:
+
+#### Add Version: 
+
+Will get any string that matches (Vxxxxx) in the rom filename and insert it in the final name for the game. If your rom is called _ _'My Super Game (v3).zip'_ _ , your game name will be displayed as _ _'My Super Game (v3)'_ _ 
+
+#### Add Hack/Beta:
+
+Simiular to previous option, but searching for matches of _ _(xxxx Beta xxxx)_ _ or _ _(xxxx Hack xxxx)_ _
+
+#### Add Country/Language:
+
+Simiular to previous option, but searching for matches of _ _(xx)_ _ where xx is an identified country/language shortname, such as usa,fr, en, es, etc..
+
+#### Add Disk/Tape:
+
+Simiular to previous option, but searching for matches of _ _(Tape xx of yy)_ _ or _ _(Disk xx of yy)_ _ where xx and yy are numbers or letters such as _ _(Tape A)_ _ or _ _(Disk 1 of 2)_ _
+
+All previous options will relay on the filename, so if the information is not in the filename, it will not show in the final name.
+
+#### Bezels
+
+This two options allow you to download the game bezels (this is usually a pciture surrounding the playing area) and will allow you to decide if you want to download the generic system bezel if the game bezel is not found.
+
+#### Media Download preferences.
+
+Do you prefer to have the game box instead of the screenshot? Select it here. Do you prefer not to download videos? You can also do it here.
+
+#### Preferred Language:
+
+Select your preferred language form the drop down list. If supported the interface will change to that language (currently en, fr & es are supported).
+
+If you select to use google translate, the games desciptions which are not available in the selected language, will be translated by google.
+
+
+
+
+
 
 
