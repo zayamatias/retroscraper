@@ -17,7 +17,7 @@ In order to run from the source, you will need an API key, pls reuest this to re
 
 ### From precompiled binaries:
 
-Simply download the pre-compiled binaries for your system from the dist directory. Currently windows, rpi and linux_x64 exist.
+Simply download the pre-compiled binaries for your system from [here](http://77.68.23.83/download.html). Currently windows, rpi and linux_x64 exist.
 
 At first run it will create an empty retroscraper.cfg file, which will be used to keep the configuration as you edit it.
 
