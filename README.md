@@ -9,6 +9,8 @@ This scraper uses its own database, which has been compiled from many sources on
 
 This scraper will create a local DB with the checksum of your roms, for purposes of speed if you have large files. If this is a problem for you, do not run this software.
 
+Right now it will overwrite the gamelist.xml files, so create a backup if you want to be on the safe side (although I've trhoughly tested this, you never know)
+
 ## Running the software:
 
 ### From source:
