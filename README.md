@@ -49,7 +49,7 @@ It also shows the current system being scraped (if you started scraping) and te 
 
 last but not least, the =Configuration= tab, allows you to configure the tool to suit your needs.
 
-![image](https://user-images.githubusercontent.com/32246591/162163846-86625d9a-d776-461c-ad62-9cebd2ba8f5c.png)
+![image](https://user-images.githubusercontent.com/32246591/162164152-a4cfd3bf-bdf8-4005-bcf0-132c5f2a9eb7.png)
 
 
 
