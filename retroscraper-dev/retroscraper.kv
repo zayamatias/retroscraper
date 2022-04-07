@@ -1,0 +1,528 @@
+#:kivy 2.0
+<MainScreen>:
+        canvas.before:
+                Rectangle:
+                        id: backimage
+                        pos: self.pos
+                        size: self.size
+                        texture: app.image_source.texture
+        GridLayout:
+                background_color: (0, 0, 0, 0)
+                cols : 1
+                orientation: 'lr-tb'
+                AsyncImage:
+                        id: retroscraperimage
+                        source: 'http://77.68.23.83/res/logo/retroscraper1.png'
+                        size: self.texture_size
+                        background_color: (0, 0, 0, 0)
+                        size_hint_y: None
+                TabbedPanel:
+                        do_default_tab: False
+                        background_color: (0, 0, 0, 0)
+                        tab_width: self.parent.width / 4
+                        TabbedPanelItem:
+                                id: tabone
+                                text: 'Games'
+                                font_name: 'font.ttf'
+                                GridLayout:
+                                        size_hint: (1,1)
+                                        orientation: 'lr-tb'
+                                        cols: 2
+                                        GridLayout:
+                                                cols:1
+                                                size_hint:(None,None)
+                                                size:(900,600) 
+                                                pos_hint: {'top': 1}
+                                                Label:
+                                                        size_hint: (1,None)
+                                                        id: gamelabel
+                                                        text: ''
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        markup: True
+                                                        valign: 'top'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                        pos_hint: {'top': 1}
+                                                Label:
+                                                        id: gamedesc
+                                                        halign: 'left'
+                                                        #font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        text_size: self.size
+                                                        valign: 'top'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                        GridLayout:
+                                                cols:1
+                                                size_hint:(None,None)
+                                                size:(300,600) 
+                                                pos_hint: {'top': 1}
+                                                Image:
+                                                        id: sysImageGame
+                                                        color: 0, 0, 0, 0
+                                                        width: 300
+                                                        height: 300
+                                                        size_hint: (None,None)
+                                                        allow_stretch: True
+                                                        pos_hint: {'top': 1}
+                                                Image:
+                                                        color: 0, 0, 0, 0
+                                                        id: gameimage
+                                                        source: ''
+                                                        width: 300
+                                                        height: 300
+                                                        size_hint: (None,None)
+                                                        allow_stretch: True
+                                                        pos_hint: {'top': 1}
+
+                        TabbedPanelItem:
+                                id: tabtwo
+                                text: 'Systems'
+                                font_name: 'font.ttf'
+                                GridLayout:
+                                        cols:1
+                                        orientation: 'lr-tb'
+                                        Label:
+                                                id: availsysLabel
+                                                text: 'YOUR AVAILABLE SYSTEMS'
+                                                font_name: 'font.ttf'
+                                                size_hint: (1,None)
+                                                size:(0,30)
+                                                valign: 'top'
+                                                outline_color: (0,0,0)
+                                                outline_width: 1
+                                        GridLayout:
+                                                id: systemschoice
+                                                pos_hint: {'top': 1}
+                                        HSeparator:
+                                        Label:
+                                                id: sysLabel
+                                                size_hint: (1, 1)                        
+                                                text: 'System'
+                                                font_name: 'font.ttf'
+                                                font_size: 14
+                                                size: self.texture_size
+                                                outline_color: (0,0,0)
+                                                outline_width: 1
+                                                valign: 'bottom'
+                                        Image:
+                                                id: sysImage
+                                                color: 0, 0, 0, 0
+                                                size_hint: (1,1)
+                        TabbedPanelItem:
+                                id: tabthree
+                                sysconfig: sysconfig.__self__
+                                text: 'Configuration'
+                                font_name: 'font.ttf'
+                                GridLayout:
+                                        size_hint_y:None
+                                        size_y:10
+                                        cols: 1
+                                        size:200,25
+                                        GridLayout:
+                                                sysconfig: sysconfig.__self__
+                                                size_hint: 1,None
+                                                size:1,30
+                                                cols: 3
+                                                Label:
+                                                        id:filesyslabel
+                                                        size_hint: (None,1)
+                                                        text: 'SYSTEMS FILE:'
+                                                        font_name: 'font.ttf'
+                                                        size: self.texture_size
+                                                        size: 200,10
+                                                        font_size: 14
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                TextInput:
+                                                        size_hint: (None,1)
+                                                        id: systemsfile
+                                                        font_name: 'font.ttf'
+                                                        size: self.texture_size
+                                                        font_size: 14
+                                                        size: 800,10
+                                                        text: ''
+                                                Button:
+                                                        id:sysconfig
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        text: 'Select File'
+                                                        #background_normal: ''
+                                                        on_press: root.show_load()
+                                                        size_hint: None,1
+                                                        size: 150,26
+                                        HSeparator:
+                                        GridLayout:
+                                                size_hint_y:None
+                                                size_y:10
+                                                cols: 6
+                                                size:200,25
+                                                Label:
+                                                        id:sysrompathlabel
+                                                        text: 'systems rom path:'
+                                                        size_hint: (None,None)
+                                                        valign: 'top'
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size:200,25
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                TextInput:
+                                                        id:esrompath
+                                                        size_hint: (None,None)
+                                                        valign: 'top'
+                                                        text: ''
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size:200,25
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                VSeparator:
+                                                Label:
+                                                        id: maptopathlabel
+                                                        size_hint: (None,None)
+                                                        valign: 'top'
+                                                        text: 'Map to Path:'
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size:200,25
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                TextInput:
+                                                        id:maptopath
+                                                        size_hint: (None,None)
+                                                        valign: 'top'
+                                                        text: ''
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        multiline: False
+                                                        size:200,25
+                                                Button:
+                                                        id:selrompath
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        text: "Select Directory"
+                                                        size: 250,26
+                                                        on_release: root.show_dir_select()               
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                        GridLayout:
+                                                size_hint_y:None
+                                                size_y:10
+                                                cols: 1
+                                                Label:
+                                                        id: gamedecorlabel
+                                                        text:'game name decorators (taken from filename)'
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (1,None)
+                                                        size: (100,30)
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                        GridLayout:
+                                                size_hint: (1,None)
+                                                size: (100,30)
+                                                cols: 4
+                                                CheckBox:
+                                                        id: versionmod
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        color: (255,255,255,1)
+                                                        on_press:root.doDecorator('version')
+                                                Label:
+                                                        id: versiondeclabel
+                                                        text:'Add Version [Sonic V1.1]'
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                CheckBox:
+                                                        id: countrymod
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press:root.doDecorator('country')
+                                                Label:
+                                                        id: countrydeclabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Add country [Sonic (USA)]'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                CheckBox:
+                                                        id: hackmod
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press:root.doDecorator('hack')
+                                                Label:
+                                                        id: hackdeclabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Add hack [Sonic (hack)]'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                CheckBox:
+                                                        id: diskmod
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press:root.doDecorator('disk')
+                                                Label:
+                                                        id: diskdeclabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Add Disk/Tape number decorators [Sonic (Disk 1/2)]'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                        GridLayout:
+                                                size_hint_y:None
+                                                size_y:10
+                                                cols: 1
+                                                Label:
+                                                        id: bezelssellabel
+                                                        text:'Download Bezels (SYSTEM if GAME NOT FOUND)'
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (1,1)
+                                                        size: (100,30)
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                        GridLayout:
+                                                size_hint: (1,None)
+                                                size: (100,60)
+                                                cols: 4
+                                                CheckBox:
+                                                        id: bezeldown
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press:root.doBezels('game')
+                                                Label:
+                                                        id: bezeldownlabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Download Game Bezels'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                CheckBox:
+                                                        id: sysbezeldown
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press:root.doBezels('system')
+                                                Label:
+                                                        id: sysbezellabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Download system bezel if game bezel not present'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                        GridLayout:
+                                                size_hint_y:None
+                                                size_y:10
+                                                cols: 1
+                                                Label:
+                                                        id: mediapreflabel
+                                                        text:'Media Download Preferences'
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (1,1)
+                                                        size: (100,30)
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                        GridLayout:
+                                                size_hint: (1,None)
+                                                size: (100,60)
+                                                cols: 4
+                                                CheckBox:
+                                                        id: preferbox
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press: root.preferbox()
+                                                Label:
+                                                        id:preferboxlabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Prefer box to screenshot'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                CheckBox:
+                                                        id: novideo
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press: root.novideo()
+                                                Label:
+                                                        id:novideolabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Do not download videos'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                                Label:
+                                                        id: preflanlabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (1,None)
+                                                        size: (100,30)
+                                                        text:'PREFERRED LANGUAGE'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                Spinner:
+                                                        id: langchoice
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (1,None)
+                                                        size: (100,30)
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                        max_height: 30
+                                                        on_text: root.selectLang()
+                                                CheckBox:
+                                                        id: usegoogle
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press: root.toggleUseGoogle('bah')
+                                                Label:
+                                                        id:usegooglelab
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Use google translate'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1                                       
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                        TabbedPanelItem:
+                                id: tabfour
+                                text: 'Errors'
+                                font_name: 'font.ttf'
+                                ScrollView:
+                                        scroll_type: ['bars']
+                                        bar_width: 10
+                                        GridLayout:
+                                                id:errorgrid
+                                                size_hint_y:None
+                                                cols: 1
+                GridLayout
+                        cols : 1
+                        orientation: 'lr-tb'
+                        size:1200,20
+                        size_hint:1,None
+                        ProgressBar:
+                                id: scrapPB
+                                size_hint_x: 1
+                                size_hint_y: None
+                                height: 30
+
+                GridLayout
+                        orientation: 'lr-tb'
+                        cols: 2
+                        size:1200,25
+                        size_hint:1,None
+                        Button:
+                                id: startScraping
+                                text: 'Waiting for proper configuration'
+                                font_name: 'font.ttf'
+                                font_size: 14
+                                on_release: root.ScanToggle()
+                                size_hint: 1,None
+                                disabled: True
+                                size: 25,25
+
+<LoadDialog>:
+        BoxLayout:
+                id:loadroot
+                size: root.size
+                pos: root.pos
+                orientation: "vertical"
+                FileChooserListView:
+                        id: filechooser
+                BoxLayout:
+                        id:loadbox
+                        size_hint_y: None
+                        height: 30
+                        Button:
+                                id:cancelbutton
+                                text: "Cancel"
+                                on_release: root.cancel()
+                        Button:
+                                id:selectbutton
+                                text: "Select"
+                                on_release: root.load(filechooser.path, filechooser.selection)                
+<MyPopup>:
+        title_font: 'font.ttf'
+        title_size: 14
+        BoxLayout:
+                id: popupbox
+                size: root.size
+                pos: root.pos
+                orientation: 'vertical'
+                cols: 1
+                Label:
+                        id: popuplabel
+                        text: 'TEST LABEL'
+                        font_name: 'font.ttf'
+                        font_size: 12
+                        size_hint_y: 0.5
+                        text_size: self.width, None
+                        height: self.texture_size[1]
+                Button:
+                        id:okpopupbutton
+                        font_name: 'font.ttf'
+                        font_size: 14
+                        text: 'Got It!'
+                        on_release: root.cancel()
+                        size_hint: (1,None)
+                        size: (1,30)
+<HSeparator@Widget>:
+        canvas:
+                Color:
+                        rgba: 1, 1, 1, 1
+                Rectangle:
+                        pos: self.pos
+                        size: self.size
+        size_hint_y: None
+        height: dp(2)
+
+<VSeparator@Widget>:
+        canvas:
+                Color:
+                        rgba: 1, 1, 1, 1
+                Rectangle:
+                        pos: self.pos
+                        size: self.size
+        size_hint_x: None
+        width: dp(2)
