@@ -1,9 +1,9 @@
 from curses.textpad import Textbox, rectangle
 import logging
 import os
-
-#os.environ["KIVY_NO_CONSOLELOG"] = "1"
-#os.environ["KCFG_KIVY_LOG_LEVEL"] = "info"
+import platform
+os.environ["KIVY_NO_CONSOLELOG"] = "1"
+os.environ["KCFG_KIVY_LOG_LEVEL"] = "info"
 os.environ["KIVY_NO_ARGS"] = "1"
 os.environ["KIVY_TEXT"] = "sdl2"
 from kivy.app import App
@@ -621,13 +621,23 @@ if __name__ == '__main__':
         pass
     resource_add_path(resourcePath()) 
     if not cli:
+        ## We just need to verify if there's an option to run in wndowed mode or not
+        plat = platform.system().upper()
+        if plat == 'LINUX':
+            ## We'running under linux
+            ## I need to verify that an actual desktop is running
+            desktop = os.environ.get('DESKTOP_SESSION')
+            if desktop == None:
+                print ('It seems you\'re running from a desktopless environment, defaulting to cli mode')
+                cli = True
+
+    if not cli:
         Config.set('graphics', 'width', '1200')
         Config.set('graphics', 'height', '750')
         Config.set('graphics', 'resizable', True)
         Config.write()
         retroscraperApp().run()    
     else:
-        print ('WHAT!')
         apikey =globalapikey
         uuid = scrapfunctions.getUniqueID()
         complete = apicalls.getLanguagesFromAPI(apikey,uuid)
