@@ -13,7 +13,6 @@ hyperframe==5.2.0
 idna==2.10
 Kivy==2.1.0
 Kivy-Garden==0.1.5
-Nuitka==0.7.7
 Pillow==9.1.0
 Pygments==2.11.2
 requests==2.27.1
