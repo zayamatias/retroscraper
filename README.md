@@ -3,7 +3,7 @@ RetroScraper - Metadata &amp; Media scraper for your rom collection
 
 Runs and has been tested under python 3.9, I've tested it under windows, linux and rpi distrubutions.
 
-You need to install the requirements for you platform before being able to run it.
+You need to install the requirements for you platform before being able to run it from source.
 
 This scraper uses its own database, which has been compiled from many sources on the net and keeps extending. If this is a problem for you, do not run this software.
 
@@ -21,7 +21,7 @@ In order to run from the source, you will need an API key, pls reuest this to re
 
 ### From precompiled binaries:
 
-Simply download the pre-compiled binaries for your system from [here](http://77.68.23.83/download.html). Currently windows, rpi and linux_x64 exist.
+Simply download the pre-compiled binaries for your system from [here](http://77.68.23.83/download.html). Currently windows, rpi and linux_x64 exist. For linux version you need to do 'chmod +rwx retroscraper' and for rpi 'chmod +rwx retroscraper.rpi' to be able to execute it.
 
 At first run it will create an empty retroscraper.cfg file, which will be used to keep the configuration as you edit it.
 
