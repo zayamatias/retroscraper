@@ -1,14 +1,15 @@
 from curses.textpad import Textbox, rectangle
-import logging
-import os
-import platform
-os.environ["KIVY_NO_CONSOLELOG"] = "1"
-os.environ["KCFG_KIVY_LOG_LEVEL"] = "info"
-os.environ["KIVY_NO_ARGS"] = "1"
-os.environ["KIVY_TEXT"] = "sdl2"
+from platform import system
+from os import environ,path
+environ["KIVY_NO_CONSOLELOG"] = "1"
+environ["KCFG_KIVY_LOG_LEVEL"] = "error"
+environ["KIVY_NO_ARGS"] = "1"
+environ["KIVY_TEXT"] = "sdl2"
+import kivy.graphics.cgl_backend.cgl_sdl2
+import kivy.uix.spinner
+import kivy.uix.progressbar
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.properties import ObjectProperty
 from kivy.factory import Factory
 from kivy.uix.floatlayout import FloatLayout
@@ -17,24 +18,28 @@ from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.image import AsyncImage
 import scrapfunctions
-import threading
-import queue
+from threading import Thread
+from queue import Queue
 from kivy.clock import Clock
-import sys
-from kivy.resources import resource_add_path, resource_find
-import argparse
+from sys import exit as sysexit
+from argparse import ArgumentParser
 import curses
 from time import sleep
-import random
-import signal
+from random import randint,randrange
+from signal import signal,SIGINT
 import logging
 import apicalls
 from kivy.config import Config
-from math import ceil,sin,radians
+from math import ceil
+from kivy.core.window import Window
+
+
+
 
 globalapikey=''
 version = '0.4'
 trans = dict()
+cli = False
 
 class MyPopup(FloatLayout):
     cancel = ObjectProperty(None)
@@ -89,7 +94,7 @@ class MainScreen(BoxLayout):
         if not exit:
             content = MyPopup(cancel=self.dismiss_popup)
         else:
-            content = MyPopup(cancel=sys.exit)
+            content = MyPopup(cancel=sysexit)
         self._popup = Popup(title=title,content=content,
                             size_hint=(0.4, 0.2))
         try:
@@ -130,14 +135,14 @@ class MainScreen(BoxLayout):
     def doBezels(self,which):
         if which == 'game':
             try:
-                self.config['bezels'] = not self.config['bezels']
+                self.config['config']['bezels'] = not self.config['config']['bezels']
             except:
-                self.config['bezels'] = True
+                self.config['config']['bezels'] = True
         if which == 'system':
             try:
-                self.config['sysbezels'] = not self.config['sysbezels']
+                self.config['config']['sysbezels'] = not self.config['config']['sysbezels']
             except:
-                self.config['sysbezels'] = True
+                self.config['config']['sysbezels'] = True
         #logging.info (which)
         #logging.info (self.config['bezels'])
         #logging.info (self.config['sysbezels'])
@@ -188,7 +193,7 @@ class MainScreen(BoxLayout):
                 trans = complete['en']
             except:
                 print ('I CANNOT CONNECT TO TE BACKEND - EXITING')
-                sys.exit()
+                sysexit()
         return 
 
 
@@ -241,13 +246,13 @@ class MainScreen(BoxLayout):
             logging.info ('###### THERE IS NO CONFIG, RETURNING ERROR')
             return False
         try:
-            if not os.path.isfile(self.config['config']['SystemsFile']):
+            if not path.isfile(self.config['config']['SystemsFile']):
                 ### Try to locate es_systems:
-                if os.path.isfile('~/.emulationstation/es_systems.cfg'):
+                if path.isfile('~/.emulationstation/es_systems.cfg'):
                     self.config['config']['SystemsFile'] = '~/.emulationstation/es_systems.cfg'
-                if os.path.isfile('/etc/emulationstation/es_systems.cfg'):
+                if path.isfile('/etc/emulationstation/es_systems.cfg'):
                     self.config['config']['SystemsFile'] = '/etc/emulationstation/es_systems.cfg'
-                if not os.path.isfile(self.config['config']['SystemsFile']):
+                if not path.isfile(self.config['config']['SystemsFile']):
                     logging.error('###### SYSTEMS FILE CANNOT BE FOUND '+str(self.config['config']['SystemsFile']))
                     return False
         except Exception as e:
@@ -331,26 +336,32 @@ class MainScreen(BoxLayout):
             try:
                 self.ids['startScraping'].text = trans['stscr']
                 self.ids['startScraping'].disabled = False
-            except:
+            except Exception as e:
+                logging.info('###### '+str(e))
                 logging.error ('###### NO START SCRAPPING BUTTON')
             self.rompath = scrapfunctions.getAbsRomPath(self.systems[0]['path'])
             self.ids['esrompath'].text = self.rompath
-            self.ids['maptopath'].text = self.config['config']['MountPath']
-            
+            try:
+                self.ids['maptopath'].text = self.config['config']['MountPath']
+            except:
+                self.ids['maptopath'].text = ''
             try:
                 self.ids['bezeldown'].active=self.config['config']['bezels']
-            except:
+            except Exception as e:
+                logging.info('###### '+str(e))
                 self.config['config']['bezels'] = False
                 self.ids['bezeldown'].active=False
             try:
                 self.ids['sysbezeldown'].active=self.config['config']['sysbezels']
-            except:
+            except Exception as e:
+                logging.info('###### '+str(e))
                 self.config['config']['sysbezels'] = False
                 self.ids['sysbezeldown'].active=False
 
             try:
                 decorators = self.config['config']['decorators']
-            except:
+            except Exception as e:
+                logging.info('###### '+str(e))
                 self.config['config']['decorators']=dict()
                 decorators = self.config['config']['decorators']
             for decorator in decorators:
@@ -362,7 +373,8 @@ class MainScreen(BoxLayout):
                         pass
             try:
                 test = self.config['config']['language']
-            except:
+            except Exception as e:
+                logging.info('###### '+str(e))
                 self.config['config']['language']='en'
             sls = []
             for sl in self.supportedlanguages.items():
@@ -372,9 +384,35 @@ class MainScreen(BoxLayout):
             self.ids['langchoice'].values = sls
             try:
                self.usegoogle=self.config['config']['usegoogle']
-            except:
+            except Exception as e:
+                logging.info('###### '+str(e))
                 self.config['config']['usegoogle']=False
             self.ids['usegoogle'].active = self.config['config']['usegoogle']
+            try:
+                logging.info('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ BEZLES '+str(self.config['config']['bezels']))
+                self.ids['bezeldown'].active = self.config['config']['bezels']
+            except Exception as e:
+                logging.info('###### '+str(e))
+                self.config['config']['bezels'] = True
+                self.ids['bezeldown'].active = self.config['config']['bezels']
+            try:
+                self.ids['sysbezeldown'].active = self.config['config']['sysbezels']
+            except Exception as e:
+                logging.info('###### '+str(e))
+                self.config['config']['sysbezels'] = True
+                self.ids['sysbezeldown'].active = self.config['config']['sysbezels']
+            try:
+                self.ids['usedb'].active = self.config['config']['usedb']
+            except Exception as e:
+                logging.info('###### '+str(e))
+                self.config['config']['usedb'] = True
+                self.ids['usedb'].active = self.config['config']['usedb']
+            try:
+                self.ids['dobackup'].active = self.config['config']['dobackup']
+            except Exception as e:
+                logging.info('###### '+str(e))
+                self.config['config']['dobackup'] = True
+                self.ids['dobackup'].active = self.config['config']['dobackup']
             self.initLabels()
             return True
 
@@ -383,6 +421,17 @@ class MainScreen(BoxLayout):
         self.config['config']['usegoogle']=self.ids['usegoogle'].active
         scrapfunctions.saveConfig(self.config)
         return 
+
+    def toggleDoBackup(self,btn=None):
+        self.config['config']['dobackup']=self.ids['dobackup'].active
+        scrapfunctions.saveConfig(self.config)
+        return 
+
+    def toggleUseDB(self,btn=None):
+        self.config['config']['usedb']=self.ids['usedb'].active
+        scrapfunctions.saveConfig(self.config)
+        return 
+
 
     def ScanToggle(self,btn=None):
         if not self.scanning:
@@ -397,8 +446,8 @@ class MainScreen(BoxLayout):
                         break
                     else:
                         systemstoscan.append(box.children[0].text)
-            self.scanqueue = queue.Queue()
-            self.t = threading.Thread(target= scrapfunctions.scanSystems,args=(self.q,self.systems,self.apikey,self.uuid,self.companies,self.config,logging,self.remoteSystems,systemstoscan,self.scanqueue,self.rompath,trans))
+            self.scanqueue = Queue()
+            self.t = Thread(target= scrapfunctions.scanSystems,args=(self.q,self.systems,self.apikey,self.uuid,self.companies,self.config,logging,self.remoteSystems,systemstoscan,self.scanqueue,self.rompath,trans))
             self.t.start()
             self.scanning=True
         else:
@@ -441,11 +490,14 @@ class MainScreen(BoxLayout):
             return
 
         if not self.pathok and not self.pathnokshown:
-            if self.config['config']['MountPath']:
-                testpath = self.config['config']['MountPath']
-            else:
+            try:
+                if self.config['config']['MountPath']:
+                    testpath = self.config['config']['MountPath']
+                else:
+                    testpath = self.rompath
+            except:
                 testpath = self.rompath
-            if  self.rompath =='' or not os.path.isdir(testpath):
+            if  self.rompath =='' or not path.isdir(testpath):
                 #print ('lllllllllllllllllllllllllllllllllllllllllllllllllll')
                 self.show_popup("pathnotok")
                 self.pathnokshown = True
@@ -508,7 +560,7 @@ class MainScreen(BoxLayout):
         self.validversion = False
         self.apikey = globalapikey
         self.uuid = scrapfunctions.getUniqueID()
-        self.q = queue.Queue()
+        self.q = Queue()
         self.confok = self.initializeConfig()
         self.dismissedpopup = False
         self.popupshown = False
@@ -522,26 +574,17 @@ class retroscraperApp(App):
         global version
         self.icon='icon.ico'
         self.title = 'retroScraper ['+str(version)+']'
-        picnr = random.randint(1,13)
+        picnr = randint(1,13)
         self.image_source = AsyncImage (source='http://77.68.23.83/res/back/'+str(picnr)+'.png')
         ms = MainScreen()
         ms.start()
         return ms
 
-
-def resourcePath():
-    '''Returns path containing content - either locally or in pyinstaller tmp file'''
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS)
-
-    return os.path.join(os.path.abspath("."))
-
-
-Factory.register('Root', cls=MainScreen)
+#Factory.register('Root', cls=MainScreen)
 
 def showrandom(q):
     while True:
-        q.put(random.randrange(100))
+        q.put(randrange(100))
         sleep(1)
 
 def signal_handler(sig, frame):
@@ -550,20 +593,22 @@ def signal_handler(sig, frame):
     curses.endwin()
     #q.put(True)
     print('SCRAP ABORTED!!! --- Last system might have not been completely scrapped!!\n')
-    sys.exit(0)
+    sysexit(0)
 
 if __name__ == '__main__':
     logging.basicConfig(filename='retroscraper.log', encoding='utf-8', level=logging.DEBUG)
-    parser = argparse.ArgumentParser(description='RetroScraper...supercharge your roms with metadata!')
+    parser = ArgumentParser(description='RetroScraper...supercharge your roms with metadata!')
     parser.add_argument('--cli', help='Run in CLI (Command Line Interface Mode)',action='store_true')
-    parser.add_argument('--systemsfile', help='locayion of the es_systems.cfg file)',nargs=1)
+    parser.add_argument('--systemsfile', help='location of the es_systems.cfg file)',nargs=1)
     parser.add_argument('--silent', help='Run in SILENT mode, minimum output to console no fancy screen, needs --cli flag also',action='store_true')
+    parser.add_argument('--nobackup', help='Do not backup gamelist.xml file',action='store_true')
+    parser.add_argument('--nodb', help='Do not use a local DB to store file hashes (might impact performance nagatively)',action='store_true')
     parser.add_argument('--language', help='Select language for descriptions',nargs=1)
     parser.add_argument('--google', help='Use google translate if description not found in your language',action='store_true')
     parser.add_argument('--country', help='Add country decorator from filename [Sonic (es)]',action='store_true')
-    parser.add_argument('--disk', help='Add disk decorator fromfilename [Sonic (disk 1/2)]',action='store_true')
-    parser.add_argument('--version', help='Add version decorator fromfilename [Sonic V1.10]',action='store_true')
-    parser.add_argument('--hack', help='Add hack decorator fromfilename [Sonic (madhedgehog hack)]',action='store_true')
+    parser.add_argument('--disk', help='Add disk decorator from filename [Sonic (disk 1/2)]',action='store_true')
+    parser.add_argument('--version', help='Add version decorator from filename [Sonic V1.10]',action='store_true')
+    parser.add_argument('--hack', help='Add hack decorator from filename [Sonic (madhedgehog hack)]',action='store_true')
     parser.add_argument('--bezels', help='Download bezels for games',action='store_true')
     parser.add_argument('--sysbezels', help='Download system bezel if game bezel is not found',action='store_true')
     argsvals = vars(parser.parse_args())
@@ -619,14 +664,22 @@ if __name__ == '__main__':
         config['config']['SystemsFile']= argsvals['systemsfile'][0]
     except:
         pass
-    resource_add_path(resourcePath()) 
+    try:
+        config['config']['nodb']= argsvals['nodb']
+    except:
+        config['config']['nodb']= False
+    try:
+        config['config']['nobackup']= argsvals['nobackup']
+    except:
+        config['config']['nobackup']= False
+    
     if not cli:
         ## We just need to verify if there's an option to run in wndowed mode or not
-        plat = platform.system().upper()
+        plat = system().upper()
         if plat == 'LINUX':
             ## We'running under linux
             ## I need to verify that an actual desktop is running
-            desktop = os.environ.get('DESKTOP_SESSION')
+            desktop = environ.get('DESKTOP_SESSION')
             if desktop == None:
                 print ('It seems you\'re running from a desktopless environment, defaulting to cli mode')
                 cli = True
@@ -638,44 +691,37 @@ if __name__ == '__main__':
         Config.write()
         retroscraperApp().run()    
     else:
+        Window.close()
+        try:
+            retroscraperApp().stop()
+        except:
+            pass
         apikey =globalapikey
         uuid = scrapfunctions.getUniqueID()
         complete = apicalls.getLanguagesFromAPI(apikey,uuid)
         trans = complete['en']
-        scanqueue = queue.Queue()
+        scanqueue = Queue()
         try:
-            signal.signal(signal.SIGINT,signal_handler) 
-        except:
-            pass
-        try:
-            signal.signal(signal.CTRL_C_EVENT,signal_handler) 
-        except:
-            pass
-        try:
-            signal.signal(signal.SIGBREAK,signal_handler) 
-        except:
-            pass
-        try:
-            signal.signal(signal.CTRL_BREAK_EVENT,signal_handler) 
+            signal(SIGINT,signal_handler) 
         except:
             pass
         #signal.signal(signal.SIGINT, lambda signum, frame: signal_handler(signum, frame, scanqueue))
-        q=queue.Queue()
+        q=Queue()
         if not scrapfunctions.isValidVersion(version,apikey,uuid):
             print ('SORRY! YOU NEED TO UPGRADE TO THE LATEST VERSION http://77.68.23.83/download.html')
             logging.error('###### THIS IS NOT THE LATEST VERSION OF RETROSCRAPER')
-            sys.exit()
+            sysexit()
         logging.debug('###### CONFIG :'+str(config))
-        if not os.path.isfile(config['config']['SystemsFile']):
+        if not path.isfile(config['config']['SystemsFile']):
             ### Try to locate es_systems:
-            if os.path.isfile('~/.emulationstation/es_systems.cfg'):
+            if path.isfile('~/.emulationstation/es_systems.cfg'):
                 config['config']['SystemsFile'] = '~/.emulationstation/es_systems.cfg'
-            if os.path.isfile('/etc/emulationstation/es_systems.cfg'):
+            if path.isfile('/etc/emulationstation/es_systems.cfg'):
                 config['config']['SystemsFile'] = '/etc/emulationstation/es_systems.cfg'
-            if not os.path.isfile(config['config']['SystemsFile']):
+            if not path.isfile(config['config']['SystemsFile']):
                 print ('There seems to be an error in your retroscraper config file, I cannot find the systems configuration file (usually something like es_systems.cfg)')
                 logging.error('###### SYSTEMS FILE CANNOT BE FOUND '+str(config['config']['SystemsFile']))
-                sys.exit()
+                sysexit()
         scrapfunctions.saveConfig(config)
         print ('Loading systems from Backend')
         logging.info ('###### LOADING SYSTEMS FROM BACKEND')
@@ -701,7 +747,7 @@ if __name__ == '__main__':
             except Exception as e:
                 print ('ERROR '+str(e))
         logging.info ('STARTING THREADS')
-        thread = threading.Thread(target= scrapfunctions.scanSystems,args=(q,systems,apikey,uuid,companies,config,logging,remoteSystems,[],scanqueue,rompath,trans))
+        thread = Thread(target= scrapfunctions.scanSystems,args=(q,systems,apikey,uuid,companies,config,logging,remoteSystems,[],scanqueue,rompath,trans))
         thread.start()
         system =''
         game=''
@@ -764,4 +810,4 @@ if __name__ == '__main__':
             curses.endwin()
         print('SCRAPPING ENDED --- Thank you for using retroscraper!!\n')
         logging.info ('###### ALL DONE!')
-        sys.exit(0)
+        sysexit(0)

@@ -1,5 +1,8 @@
 import logging
-import requests
+from requests import get as requestsget
+from requests import exceptions as requestsexceptions
+from requests import Response as requestsResponse
+from requests import post as requestspost
 import shutil
 from PIL import Image
 from io import BytesIO
@@ -18,15 +21,15 @@ def simpleCall(url):
         retries = 10
         while not success and retries > 1:
             try:
-                req = requests.get(url,headers=headers)
+                req = requestsget(url,headers=headers)
                 success = True
-            except requests.exceptions.Timeout:
+            except requestsexceptions.Timeout:
                 #logging.error ('###### REQUEST TIMED OUT')
                 retries = retries - 1 
-            except requests.exceptions.TooManyRedirects:
+            except requestsexceptions.TooManyRedirects:
                 pass
                 #logging.error ('###### URL SEEMS TO BE WRONG '+URL)
-            except requests.exceptions.RequestException as e:
+            except requestsexceptions.RequestException as e:
                 #logging.error ('###### UNHANDLED ERROR '+str(e))
                 retries = retries -1
         if req.status_code==200:
@@ -52,7 +55,7 @@ def getImageAPI(url,destfile,apikey,uuid,force=False):
     finalURL = 'http://77.68.23.83'+url
     while retries > 0:
         try:
-            r = requests.get(finalURL, stream=True, headers=myHeader)
+            r = requestsget(finalURL, stream=True, headers=myHeader)
             if r.status_code == 200:
                 with open(destfile, 'wb') as f:
                     r.raw.decode_content = True
@@ -67,7 +70,7 @@ def getImageAPI(url,destfile,apikey,uuid,force=False):
                     return True
             else:
                 if ('.png' in url) and r.status_code==404:
-                    r = requests.get('http://77.68.23.83/api/medias/0/noimage.png', stream=True, headers=myHeader)
+                    r = requestsget('http://77.68.23.83/api/medias/0/noimage.png', stream=True, headers=myHeader)
                     if r.status_code == 200:
                         with open(destfile, 'wb') as f:
                             r.raw.decode_content = True
@@ -95,12 +98,12 @@ def getCallHandler(url,apikey,uuid):
     header = {"apikey":apikey,"uuid":uuid,"plat":platform.platform(),"User-Agent": "Retroscraper"}
     while retries > 0:
         try:
-            result = requests.get(url, headers=header)
+            result = requestsget(url, headers=header)
             if result.status_code==200 or result.status_code == 404:
                 return result
             else:
                 if result.status_code == 403:
-                    myResponse = requests.Response()
+                    myResponse = requestsResponse()
                     myResponse.status_code=403
                     type(myResponse).text='{"response":{"error":"Not authorized to use API"}}'.encode('utf-8')
                     return myResponse
@@ -108,7 +111,7 @@ def getCallHandler(url,apikey,uuid):
                     logging.info ('###### GOT RESULT '+str(result.status_code)+' FROM SERVER')
         except:
             retries = retries -1
-    myResponse = requests.Response()
+    myResponse = requestsResponse()
     myResponse.status_code=404
     type(myResponse).text='{"response":{"error":"cannot read from API"}}'.encode('utf-8')
     return myResponse
@@ -118,12 +121,12 @@ def postCallHandler(url,apikey,uuid,data):
     retries = 10
     while retries > 0:
         try:
-            result = requests.post(url, headers=header,data=data)
+            result = requestspost(url, headers=header,data=data)
             if result.status_code==200 or result.status_code == 404:
                 return result
         except:
             retries = retries -1
-    myResponse = requests.Response()
+    myResponse = requestsResponse()
     myResponse.status_code=404
     type(myResponse).text='{"error":"cannot send to API"}'.encode('utf-8')
     return myResponse
@@ -142,11 +145,7 @@ def getLanguagesFromAPI(apikey,uuid):
     if result.status_code == 404:
         return []
     else:
-        retjson = result.json()
-        if 'error' in str(retjson):
-            return[]
-        else:
-            return retjson['translations']
+        return result.json()['translations']
 
 def getSystemsFromAPI(apikey,uuid):
     url = 'http://77.68.23.83/api/systems'
@@ -154,11 +153,7 @@ def getSystemsFromAPI(apikey,uuid):
     if result.status_code == 404:
         return []
     else:
-        retjson = result.json()
-        if 'error' in str(retjson):
-            return[]
-        else:
-            return retjson['response']
+        return result.json()['response']
 
 def getCompaniesFromAPI(apikey,uuid):
     url = 'http://77.68.23.83/api/companies'

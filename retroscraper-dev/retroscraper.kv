@@ -339,55 +339,6 @@
                                                 HSeparator:
                                                 HSeparator:
                                                 HSeparator:
-                                        GridLayout:
-                                                size_hint_y:None
-                                                size_y:10
-                                                cols: 1
-                                                Label:
-                                                        id: mediapreflabel
-                                                        text:'Media Download Preferences'
-                                                        font_name: 'font.ttf'
-                                                        font_size: 14
-                                                        size_hint: (1,1)
-                                                        size: (100,30)
-                                                        outline_color: (0,0,0)
-                                                        outline_width: 1
-                                        GridLayout:
-                                                size_hint: (1,None)
-                                                size: (100,60)
-                                                cols: 4
-                                                CheckBox:
-                                                        id: preferbox
-                                                        size_hint: (None,None)
-                                                        size: (100,30)
-                                                        on_press: root.preferbox()
-                                                Label:
-                                                        id:preferboxlabel
-                                                        font_name: 'font.ttf'
-                                                        font_size: 14
-                                                        size_hint: (None,None)
-                                                        size: (100,30)
-                                                        text:'Prefer box to screenshot'
-                                                        outline_color: (0,0,0)
-                                                        outline_width: 1
-                                                CheckBox:
-                                                        id: novideo
-                                                        size_hint: (None,None)
-                                                        size: (100,30)
-                                                        on_press: root.novideo()
-                                                Label:
-                                                        id:novideolabel
-                                                        font_name: 'font.ttf'
-                                                        font_size: 14
-                                                        size_hint: (None,None)
-                                                        size: (100,30)
-                                                        text:'Do not download videos'
-                                                        outline_color: (0,0,0)
-                                                        outline_width: 1
-                                                HSeparator:
-                                                HSeparator:
-                                                HSeparator:
-                                                HSeparator:
                                                 Label:
                                                         id: preflanlabel
                                                         font_name: 'font.ttf'
@@ -420,11 +371,44 @@
                                                         size: (100,30)
                                                         text:'Use google translate'
                                                         outline_color: (0,0,0)
-                                                        outline_width: 1                                       
+                                                        outline_width: 1
                                                 HSeparator:
                                                 HSeparator:
                                                 HSeparator:
                                                 HSeparator:
+                                                CheckBox:
+                                                        id: dobackup
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press: root.toggleDoBackup('bah')
+                                                Label:
+                                                        id: backuplabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (1,None)
+                                                        size: (100,30)
+                                                        text:'BACKUP GAMELIST FILE'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                CheckBox:
+                                                        id: usedb
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press: root.toggleUseDB('bah')
+                                                Label:
+                                                        id:usedblabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Use local DB for hashes'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                                HSeparator:
+                                        
                         TabbedPanelItem:
                                 id: tabfour
                                 text: 'Errors'
