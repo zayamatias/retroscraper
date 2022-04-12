@@ -3,6 +3,8 @@ RetroScraper - Metadata &amp; Media scraper for your rom collection
 
 Runs and has been tested under python 3.9 & 3.7, I've tested it under windows, linux and rpi distrubutions, but of course, errors will still occur.
 
+RPI binary has been compiler on an actual retropie image (latest version).
+
 You need to install the requirements for you platform before being able to run it from source.
 
 This scraper uses its own database, which has been compiled from many sources on the net and keeps extending. If this is a problem for you, do not run this software.
