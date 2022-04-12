@@ -1,15 +1,15 @@
 # RetroScraper
 RetroScraper - Metadata &amp; Media scraper for your rom collection 
 
-Runs and has been tested under python 3.9, I've tested it under windows, linux and rpi distrubutions.
+Runs and has been tested under python 3.9 & 3.7, I've tested it under windows, linux and rpi distrubutions, but of course, errors will still occur.
 
 You need to install the requirements for you platform before being able to run it from source.
 
 This scraper uses its own database, which has been compiled from many sources on the net and keeps extending. If this is a problem for you, do not run this software.
 
-This scraper will create a local DB with the checksum of your roms, for purposes of speed if you have large files. If this is a problem for you, do not run this software.
+This scraper will create a local DB with the checksum of your roms, for purposes of speed if you have large files. If this is a problem for you, use the --nodb modifier.
 
-Right now it will overwrite the gamelist.xml files, so create a backup if you want to be on the safe side (although I've trhoughly tested this, you never know)
+It will create a backup of the gamelist.xml files by default, use the --nobackup modifier to overwrite them directly.
 
 ## Running the software:
 
@@ -119,8 +119,13 @@ If you select to use google translate, the games desciptions which are not avail
 
 This is similar to the _ _--language xx_ _ command and _ _--google_ _
 
+#### No DB
 
+Retroscraper creates a local retroscraper.db file, where it will store all the checksums for yoru files. This is done to avoid losing extra time in subsequent runs, specially fro large files. If you prefer to calculate the hashes on teh fly, use the _ _--nodb_ _ modifier
 
+#### No Backup:
+
+Since latest version, RetroScraper will autoamtically generate a backup of your gamelist.xml file for each system, by adding a number to it (gamelist.xml.1, gamelist.xml.2 and so forth). If you want to avoid having these backups created, use the _ _--nobackup_ _ modifier.
 
 
 
