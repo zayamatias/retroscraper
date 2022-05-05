@@ -23,7 +23,7 @@ In order to run from the source, you will need an API key, pls reuest this to re
 
 ### From precompiled binaries:
 
-Simply download the pre-compiled binaries for your system from [here](http://77.68.23.83/download.html). Currently windows, rpi and linux_x64 exist. For linux version you need to do 'chmod +rwx retroscraper' and for rpi 'chmod +rwx retroscraper.rpi' to be able to execute it.
+Simply download the pre-compiled binaries for your system from the [releases page](https://github.com/zayamatias/retroscraper/releases). Currently windows, rpi and linux_x64 exist. For linux version you need to do 'chmod +rwx retroscraper' and for rpi 'chmod +rwx retroscraper.rpi' to be able to execute it.
 
 At first run it will create an empty retroscraper.cfg file, which will be used to keep the configuration as you edit it.
 
