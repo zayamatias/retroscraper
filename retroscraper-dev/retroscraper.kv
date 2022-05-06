@@ -295,8 +295,8 @@
                                                 size_y:10
                                                 cols: 1
                                                 Label:
-                                                        id: bezelssellabel
-                                                        text:'Download Bezels (SYSTEM if GAME NOT FOUND)'
+                                                        id: mediapreflabel
+                                                        text:'Download Media Preferences'
                                                         font_name: 'font.ttf'
                                                         font_size: 14
                                                         size_hint: (1,1)
@@ -307,6 +307,34 @@
                                                 size_hint: (1,None)
                                                 size: (100,60)
                                                 cols: 4
+                                                CheckBox:
+                                                        id: preferbox
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press:root.doBoxes()
+                                                Label:
+                                                        id: preferboxlabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Download box game instead of screenshot'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                CheckBox:
+                                                        id: novideodown
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press:root.doVideos()
+                                                Label:
+                                                        id: novideodownlabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Do not download video'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
                                                 CheckBox:
                                                         id: bezeldown
                                                         size_hint: (None,None)
@@ -333,6 +361,34 @@
                                                         size_hint: (None,None)
                                                         size: (100,30)
                                                         text:'Download system bezel if game bezel not present'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                CheckBox:
+                                                        id: cleanmedia
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press:root.doClean()
+                                                Label:
+                                                        id: cleanmedialabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Clean media directories before downloading'
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
+                                                CheckBox:
+                                                        id: optimizemedia
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        on_press:root.doBezels('system')
+                                                Label:
+                                                        id: optimizemedialabel
+                                                        font_name: 'font.ttf'
+                                                        font_size: 14
+                                                        size_hint: (None,None)
+                                                        size: (100,30)
+                                                        text:'Optimize media by creating links (slow)'
                                                         outline_color: (0,0,0)
                                                         outline_width: 1
                                                 HSeparator:

@@ -2,6 +2,7 @@ from hashlib import md5 as hashlibmd5
 from hashlib import sha1 as hashlibsha1
 from zlib import crc32 as zlibcrc32
 import sqlite3 as sl
+from pathlib import Path as Path
 
 
 
@@ -27,7 +28,8 @@ def calculate(file):
     return rsha1,rmd5,rcrc
 
 def getfromDB(file):
-    con = sl.connect('retroscraper.db')
+
+    con = sl.connect(str(Path.home())+'/.retroscraper/retroscraper.db')
     rsha1=''
     rmd5=''
     rcrc=''

@@ -1,8 +1,9 @@
 from re import findall,sub,search
 from xml.sax.saxutils import escape
 from sys import exit as sysexit
+from numpy import save
 from checksums import getChecksums
-from shutil import copyfile
+from shutil import copyfile,rmtree
 import apicalls
 from os import path as ospath
 from os import makedirs,remove,mkdir
@@ -30,13 +31,13 @@ def getArcadeName(name):
     #print('###### COULD NOT GET ARCADE NAME FROM MAMEDB')
     #print('RESOPONSE='+str(response)+']')
     #logging.debug('###### TRYING WITH BLU FERRET IN URL '+callURL2)
-    response = apicalls.simpleCall(callURL2) 
+    response = apicalls.simpleCall(callURL2)
     if response !='':
         gamename = findall("\<title\>Game Details:  (\w*).*\<\/title\>", response[0])
         return gamename
     #print ('###### COULD NOT GET NAME FROM BLU FERRET')
     #logging.debug('###### TRYING WITH ARCADE ITALIA IN URL '+callURL3)
-    response = apicalls.simpleCall(callURL3) 
+    response = apicalls.simpleCall(callURL3)
     if response != '':
         gamename = findall("<title>(.*?)<\/title>", response)[0].replace(' - MAME machine','').replace(' - MAME software','')
         gamename = gamename.replace(' - MAME machin...','')
@@ -49,16 +50,13 @@ def getArcadeName(name):
 def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid):
     filename = filename.replace ('\\','/')
     filename = filename[filename.rindex('/')+1:]
-    url = 'http://77.68.23.83/api/sha1/'+sha1
-    result = apicalls.getCallHandler(url, apikey,uuid)
+    result = apicalls.getSHA1(sha1, apikey,uuid)
     nosha = False
     if result.status_code == 404:
         nosha = True
-        url = 'http://77.68.23.83/api/crc/'+crc
-        result = apicalls.getCallHandler(url, apikey,uuid)
+        result = apicalls.getCRC(crc, apikey,uuid)
         if result.status_code == 404:
-            url = 'http://77.68.23.83/api/md5/'+md5
-            result = apicalls.getCallHandler(url, apikey,uuid)
+            result = apicalls.getMD5(md5, apikey,uuid)
             if result.status_code == 404:
                 ### remove both lines below
                 fname = filename[:filename.rindex('.')]
@@ -77,25 +75,28 @@ def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid):
                 else:
                     partnames =  sub('[^A-Za-z0-9]+',' ',fname).lower().split()
                 exclude_words = ['trsi','bill','sinclair','part','tape','gilbert','speedlock','erbesoftwares','aka','erbe','iso','psn','soft','crack','dsk','release','z80','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','prototype','pirate','world','fre','h3c','jue','edition','c128','unl','1983','1984','ltd','side','1985','1986','1987','software','disabled','atx','bamcopy','playable','data','boot','xenophobia','code','dump','compilation','cd1','cd2','cd3','cd4','paradox','19xx','1988','1989','1990','1991','1992','1993','1994','1995','1996','manual','csl','defjam','files','pdx','doscopy','bootable','cracktro','flashtro','flt','checksum','error','qtx','aga','corrupt','disk1','disk2','disk3','disk4','disk5','disk6','italy','spain','psx','disc','demo','rev','slus','replicants','germany','france','start','tsth','patch','newgame','sega','beta','hack','rus','h1c','h2c','the','notgame','zzz','and','pal','ntsc','disk','file','inc','fullgame','48k','128k','16k','tap','tzx','usa','japan','europe','d64','t64','c64']
+                sfname = sub("[\(\[].*?[\)\]]", "", fname)
+                sfname = sfname.replace('_',' ').strip()
                 for thissys in system:
-                    baseurl = 'http://77.68.23.83/api/search/'+str(thissys)+'/'
                     for partname in partnames:
                         if len(partname)>3 and not (partname.lower() in exclude_words) :
-                            url = baseurl + partname
-                            result = apicalls.getCallHandler(url, apikey,uuid)
+                            result = apicalls.getSearch(str(thissys),partname, apikey,uuid)
                             if result.status_code !=404:
-                                for searchable in result.json()['response']['results']:
-                                    sfname = sub("[\(\[].*?[\)\]]", "", fname)
-                                    sfname = sfname.replace('_',' ').strip()
+                                try:
+                                    myresults = result.json()['response']['results']
+                                except Exception as e:
+                                    print ('ERROR IN JSON RECEIVED FROM BACKEND '+str(thissys)+' SEARCHING FOR '+partname)
+                                    print (str(result.content))
+                                    print ('ERROR '+str(e))
+                                    continue
+                                for searchable in myresults:
                                     if sfname.lower() == searchable['name']['text'].lower():
-                                        result = apicalls.getCallHandler('http://77.68.23.83'+searchable['gameURL'], apikey,uuid)
-                                        url = 'http://77.68.23.83/api/submit'
+                                        result = apicalls.getURL(searchable['gameURL'], apikey,uuid)
                                         submitJson = '{"request": {"type": "romnotincluded","data": {"gameUrl":"'+searchable['gameURL']+'","systemid": "'+str(system)+'","filename": "'+filename+'","match":"'+fname+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
-                                        subresult = apicalls.postCallHandler(url,apikey,uuid,submitJson)
-                                        return result.json()['response']                                    
-                url = 'http://77.68.23.83/api/submit'
+                                        subresult = apicalls.postSubmit (submitJson,apikey,uuid)
+                                        return result.json()['response']
                 submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "'+filename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
-                result = apicalls.postCallHandler(url, apikey,uuid,submitJson)
+                result = apicalls.postSubmit (submitJson,apikey,uuid)
                 response = {"game": {"ratings": [], "dates": [], "names": [{'text':filename,'region':'default'}], "roms": [], "cloneof": "0", "genres": [],\
                             "notgame": "false", "system": {"url": "/api/system/"+str(system[0]), "id": int(system[0])}, "players": {"text": "Unknown"},\
                             "synopsis": [{"text":"Could not find Synopsis","language":"en"}], "editor": {}, "medias": [], "developer": {}, "id":0,\
@@ -108,16 +109,17 @@ def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid):
     try:
         response = result.json()['response']
         if nosha:
-            url = 'http://77.68.23.83/api/submit'
             try:
                 gameid = str(response['game']['id'])
             except:
                 gameid = '1'
             submitJson = '{"request": {"type": "nosha","data": {"gameid":"'+gameid+'","systemid": "'+str(system)+'","filename": "'+filename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}'
-            subresult = apicalls.postCallHandler(url, apikey,uuid,submitJson)
-    except:
-        print ('GETTING INFO FROM API: '+str(result))
-        sysexit()
+            subresult = apicalls.postSubmit (submitJson,apikey,uuid)
+    except Exception as e:
+        print ('GETTING INFO FROM API: '+str(result.json())+' ERROR '+str(e))
+        print (system,filename,sha1,md5,crc)
+        response = None
+        #sysexit()
     return response
 
 def isValidVersion(appVer,apikey,uuid):
@@ -131,42 +133,64 @@ def isValidVersion(appVer,apikey,uuid):
 def getUniqueID():
     return ''.join(findall('..', '%012x' % getnode())).upper()
 
-def loadConfig(logging):
-    logging.info ('###### SETTING UP ')
-    configfilename= 'retroscraper.cfg'
+def loadConfig(logging,q):
     config = dict()
     config['config']=dict()
     config['config']["SystemsFile"]=""
     config['config']["MountPath"]=""
+    config['decorators']=dict()
+    logging.info ('###### SETTING UP ')
+    homedir = str(Path.home())+'/.retroscraper/'
+    if not ospath.isdir(homedir):
+        try:
+            makedirs(homedir)
+            logging.info ('####### CREATED HOMEDIR DIRECTORY')
+        except Exception as e:
+            logging.error ('###### ERROR SAVING CONFIG IN '+str(homedir)+'  ERROR '+str(e))
+            q.put('CONFIG ERROR!','popup','I CANNOT CREATE A CONFIG FILE '+str(e))
+            return config
+    configfilename= homedir+'retroscraper.cfg'
     if not ospath.isfile(configfilename):
-        logging.info ('###### CONFIG FILE DOES NOT EXIST, CREATING ONE')
-        f = open(configfilename, "w")
-        logging.info ('###### CONFIG FILE DOES NOT EXIST, CREATED ONE')
-        f.write(jsondumps(config))
-        logging.info ('###### CONFIG FILE DOES NOT EXIST, CLOSING ONE')
-        f.close()    
-        return config
+        try:
+            logging.info ('###### CONFIG FILE DOES NOT EXIST, CREATING ONE')
+            f = open(configfilename, "w")
+            logging.info ('###### CONFIG FILE DOES NOT EXIST, CREATED ONE')
+            f.write(jsondumps(config))
+            logging.info ('###### CONFIG FILE DOES NOT EXIST, CLOSING ONE')
+            f.close()
+            return config
+        except Exception as e:
+            q.put('CONFIG ERROR!','popup','I CANNOT CREATE A CONFIG FILE '+str(e))
+            return config
+            
     logging.info ('###### READING CONFIG FILE')
     f = open(configfilename, "r")
     try:
         logging.info ('###### READING CONFIG FILE INTO JSON')
         configret = jsonloads(f.read())
         logging.info ('###### SUCCESS')
+        f.close()
     except Exception as e:
         logging.info ('###### FAILURE, CREATING EMPTY CONFIG')
         configret = dict()
         configret['config']=dict()
-    f.close()
-    logging.info ('###### RETIURNING CONFIG')
+        f.close()
+        saveConfig(configret,q)
+    logging.info ('###### RETURNING CONFIG')
     return configret
 
-def saveConfig(config):
-    configfilename= 'retroscraper.cfg'
-    f = open(configfilename, "w")
-    f.write(jsondumps(config))
-    f.close()    
+def saveConfig(config,q):
+    homedir = str(Path.home())+'/.retroscraper/'
+    configfilename= homedir+'retroscraper.cfg'
+    try:
+        f = open(configfilename, "w")
+        f.write(jsondumps(config))
+        f.close()
+    except Exception as e:
+        q.put('CONFIG ERROR!','popup','I CANNOT CREATE A CONFIG FILE '+str(e))
+        return config
     return
- 
+
 def processBezels(bezelURL, destbezel, apikey, uuid,filename,path,logging):
     logging.info ('+++++++==========###### PROCESS BEZEL FOR '+filename+' LOCATED AT '+path)
     logging.info ('###### DOWNLOADING BEZELS ')
@@ -283,7 +307,7 @@ def multiDisk(filename):
     return matchs
 
 def multiHack(filename):
-    checkreg = '\([H|h][A|a][C|c][K|k][^\)]*\)|\([B|b][E|e][T|t][A|a][^\)]*\)'
+    checkreg = '\(.*[H|h][A|a][C|c][K|k][^\)]*\)|\(.*[B|b][E|e][T|t][A|a][^\)]*\)'
     matchs = search(checkreg,filename)
     return matchs
 
@@ -299,10 +323,10 @@ def multiCountry(filename):
     return matchs
 
 def multiVersion(filename):
-    checkreg = '[V|v]\d*\.\w*'
+    checkreg = '.*[V|v]\d*\.\w*'
     matchs = search(checkreg,filename)
     if not matchs:
-        checkreg = '\([H|h][A|a][C|c][K|k][^\)]*\)|\([P|p][R|o][T|t][O|o][T|t][Y|y][P|p][E|e][^\)]*\)|\([D|d][E|e][M|m][O|o][^\)]*\)|\([S|s][A|a][M|m][P|p][L|l][E|e][^\)]*\)|\([B|b][E|e][T|t][A|a][^\)]*\)'
+        checkreg = '\(.*[H|h][A|a][C|c][K|k][^\)]*\)|\([P|p][R|o][T|t][O|o][T|t][Y|y][P|p][E|e][^\)]*\)|\([D|d][E|e][M|m][O|o][^\)]*\)|\([S|s][A|a][M|m][P|p][L|l][E|e][^\)]*\)|\([B|b][E|e][T|t][A|a][^\)]*\)'
         matchs = search(checkreg,filename)
     return matchs
 
@@ -312,12 +336,20 @@ def getMediaUrl(mediapath,file,medias,mediaList,logging,regionList=['wor']):
     for mediatype in mediaList:
         for region in regionList:
             for img in medias:
-                if mediatype in img.values() and region in img.values():
-                    destfile = mediapath+file+'.'+img['format']
-                    imageURL = img['url']
-                    return imageURL,destfile
+                #logging.info('####### MEDIATYPE '+str(mediatype)+'   IMG VALUES '+str(img.values()))
+                if mediatype=='box-2D':
+                    if mediatype in img.values():
+                        destfile = mediapath+file+'.'+img['format']
+                        imageURL = img['url'].replace(img['region'],'wor')
+                        logging.info ('###### RETURNING '+imageURL)
+                        return imageURL,destfile
+                else:
+                    if mediatype in img.values() and region in img.values():
+                        destfile = mediapath+file+'.'+img['format']
+                        imageURL = img['url']
+                        return imageURL,destfile
     return imageURL,destfile
-    
+
 
 def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,thn):
     logging.info ('###### STARTING FILE '+file)
@@ -343,8 +375,27 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     simplefile = file[file.rindex('/')+1:file.rindex('.')]
     logging.info ('###### SIMPLE FILE NAME :['+str(simplefile)+']')
     system['path'] = system['path'].replace('\\','/')
-    imageURL,destimage = getMediaUrl(system['path']+'images/',simplefile,result['game']['medias'],['mixrbv1','ss','sstitle'],logging,['wor','default'])
-    videoURL,destvideo = getMediaUrl(system['path']+'videos/',simplefile,result['game']['medias'],['video-normalized'],logging,['wor','default'])
+    try:
+        pf =  config['config']['preferbox']
+    except:
+        config['config']['preferbox']= False
+    if not config['config']['preferbox']:
+        logging.info ('###### DOWNLOADING SCREENSHOT')
+        imageURL,destimage = getMediaUrl(system['path']+'images/',simplefile,result['game']['medias'],['mixrbv1','ss','sstitle'],logging,['wor','default'])
+    else:
+        logging.info ('###### DOWNLOADING BOX')
+        imageURL,destimage = getMediaUrl(system['path']+'images/',simplefile,result['game']['medias'],['box-2D'],logging,['wor'])
+    try:
+        nv =  config['config']['novideodown']
+    except:
+        config['config']['novideodown']= False
+    if not config['config']['novideodown']:
+        logging.info ('###### DOWNLOADING VIDEO')
+        videoURL,destvideo = getMediaUrl(system['path']+'videos/',simplefile,result['game']['medias'],['video-normalized'],logging,['wor','default'])
+    else:
+        logging.info ('###### NOT DOWNLOADING VIDEO')
+        videoURL = ''
+        destvideo = ''
     marqueeURL,destmarquee = getMediaUrl(system['path']+'marquees/',simplefile,result['game']['medias'],['screenmarqueesmall'],logging,['wor','default',])
     logging.info ('++++++++++++++++ TRYING TO GET BEZELS')
     destbezel=''
@@ -431,7 +482,7 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
                 break
         if not founddesc:
             logging.info ('###### COULD NOT FIND DESCRIPTION IN YOU PREFERRED LANGUAGE '+str(config['config']['language'])+' SO I\'M DEFAULTING TO FIRST FOUND')
-            untdesc = result['game']['synopsis'][0]['text'].replace('&quot;','"')               
+            untdesc = result['game']['synopsis'][0]['text'].replace('&quot;','"')
             try:
                 if config['config']['usegoogle']:
                     translator=Translator()
@@ -506,33 +557,66 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     q.put(['scrapPB','valueincrease'])
     logging.info ('###### DID PUT IN QUEUE')
     logging.info ('###### PUT IN SQUEUE')
-    sq.put (thisTag)
+    sq.put ((thisTag,int(result['game']['id'])))
     logging.info ('###### DID PUT IN SQUEUE')
     logging.info ('###### PUT IN TQUEUE')
     tq.put(thn)
     logging.info ('###### DID PUT IN TQUEUE')
     logging.info ('###### DONE FILE '+file)
-   
+    return
+
+def findMissingGames(systemid,havelist,apikey,uuid,systems,queue,doDownload):
+    allgames = apicalls.getAllGames(systemid,apikey,uuid)
+    missfile ='missing.txt'
+    f = open (missfile,'a')
+    sysname = ''
+    for thissys in systems:
+        if systemid in thissys['id']:
+            sysname = thissys['name']
+            break
+    f.write('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\nSystem: '+sysname+'\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
+    for game in allgames:
+        if game['gameid'] not in havelist:
+            output =''
+            thisGame = apicalls.getGame(game['gameid'],apikey,uuid)
+            output = output+'Game: '+thisGame['game']['names'][0]['text']+'\n==========================================================================\nRoms:\n'
+            queue.put(['gamelabel','text','Missing:'+thisGame['game']['names'][0]['text']])
+            roms=''
+            for rom in thisGame['game']['roms']:
+                if doDownload:
+                    apicalls.download_file('')
+                roms = roms+rom['filename']+'\n'
+            roms = roms + '--------------------------------------------------------------------------\n'
+            output=output+roms
+            f.write(output)
+    f.close()
     return
 
 def getSystemIcon(systemid,apikey,uuid):
-    if ospath.isfile('system.png'):
-        remove('system.png')
-    apicalls.getImageAPI('/api/medias/'+str(systemid)+'/system/logo.png','system.png',apikey,uuid)
-    return 'system.png'
+    dpath = str(Path.home())+'/.retroscraper'
+    dfile = dpath+'/system.png'
+    if ospath.isfile(dfile):
+        remove(dfile)
+    apicalls.getImageAPI('/api/medias/'+str(systemid)+'/system/logo.png',dfile,apikey,uuid)
+    return dfile
 
 def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,selectedSystems,scanqueue,origrompath,trans):
+    hpath = str(Path.home())+'/.retroscraper/'
+    q.put(['gamelabel','text','Scanning Files'])
+    missfile ='missing.txt'
+    if ospath.isfile(missfile):
+        remove(missfile)
     logging.info ('###### INTO SYSTEM SCAN')
     if not systems:
         logging.info ('###### NO SYSTEMS TO SCAN')
         print ('COULD NOT FIND ANY SYSTEMS - EXITING')
-        sysexit()
+        return
     getmeout = False
     emptyGameTag = "<game><rating>$RATING</rating><lastplayed/><name>$NAME</name><marquee>$MARQUEE</marquee><image>$IMAGE</image><publisher>$PUBLISHER</publisher><releasedate>$RELEASEDATE</releasedate><players>$PLAYERS</players><video>$VIDEO</video><genre>$GENRE</genre><path>$PATH</path><playcount/><developer>$DEVELOPER</developer><thumbnail/><desc>$DESCRIPTION</desc></game>"
     for system in systems:
-        logging.info ('###### DOING '+str(system))
         if (system['name'] not in selectedSystems) and (selectedSystems!=[]) and selectedSystems[1]!=trans['all']:
             continue
+        logging.info ('###### DOING '+str(system))
         if config['config']['MountPath']:
             system['path']=system['path'].replace(origrompath,config['config']['MountPath'])
         if not ospath.isdir(system['path']):
@@ -541,15 +625,11 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             q.put(['errorlabel','text',errormsg])
             continue
         outXMLFile = system['path']+'gamelist.xml'
-        tmpxmlFile = 'gamelist.xml'
+        tmpxmlFile = hpath+'gamelist.xml'
         writeFile = open(tmpxmlFile,'w',encoding="utf-8")
         writeFile.write("<?xml version='1.0' encoding='utf-8'?><gameList>")
         romfiles=[]
         try:
-            
-            #romfiles = [os.sep + ospath.join('dir', ospath.basename(x)) for x in recpath(system['path'][:-1]).rglob('*.*')]
-            #romfiles = recpath(system['path'][:-1]).rglob('*.*')
-            #romfiles.append(str(rfile))
             spath = system['path']
             if spath[-1] != '/':
                 spath = spath +'/'
@@ -579,12 +659,33 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         else:
             sysid=system['id'][0]
         getSystemIcon(sysid,apikey,uuid)
-        q.put(['sysImage','source','system.png'])
-        q.put(['sysImageGame','source','system.png'])
+        q.put(['sysImage','source',hpath+'system.png'])
+        q.put(['sysImageGame','source',hpath+'system.png'])
         q.put(['sysLabel','text','System : '+str(system['name'])+' - '+str(len(romfiles))+' files'])
         q.put(['scrapPB','max',len(romfiles)])
         q.put(['scrapPB','value',0])
         #### SYSTEM IMAGE
+        try:
+            cm = config['config']['cleanmedia']
+        except:
+            config['config']['cleanmedia'] = False
+            saveConfig(config,q)
+        if config['config']['cleanmedia']:
+            try:
+                rmtree(system['path']+'images/')
+                logging.info ('###### DELETED DIRECTORY IMAGES ')
+            except Exception as e:
+                logging.info ('###### COULD NOT DELETE DIRECTORY IMAGES '+str(e))
+            try:
+                rmtree(system['path']+'videos/')
+                logging.info ('###### DELETED DIRECTORY VIDEOS ')
+            except Exception as e:
+                logging.info ('###### COULD NOT DELETE DIRECTORY VIDEOS '+str(e))
+            try:
+                rmtree(system['path']+'marquees/')
+                logging.info ('###### DELETED DIRECTORY MARQUEES ')
+            except Exception as e:
+                logging.info ('###### COULD NOT DELETE DIRECTORY MARQUEES '+str(e))
         if not ospath.isdir(system['path']+'images/'):
             mkdir(system['path']+'images/')
         if not ospath.isdir(system['path']+'videos/'):
@@ -598,18 +699,22 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         donesystem = False
         thread_list = [None]*5
         queuefull = False
+        havegames=[]
         while (currFileIdx < totalfiles) and not donesystem:
             if currFileIdx >= totalfiles:
                 donesystem = True
-            else:    
+            else:
                 file = str(romfiles[currFileIdx])
                 if '.' in file:
                     filext = file[file.rindex('.'):]
                 else:
                     filext=''
                 if not queuefull:
-                    if not filext in system['extension']:
-                        logging.info ('###### This file ['+file+'] is not in the list of accepted extensions')
+                    if (not filext in system['extension']) and not ('gaemlist.xml' in file.lower()):
+                        try:
+                            logging.info ('###### This file ['+file+'] is not in the list of accepted extensions')
+                        except:
+                            logging.info ('###### This file [] is not in the list of accepted extensions')
                         q.put(['scrapPB','valueincrease'])
                         sq.put ('')
                         currFileIdx = currFileIdx+1
@@ -636,7 +741,9 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             try:
                 value = sq.get_nowait()
                 try:
-                    writeFile.write(value+"")
+                    if value:
+                        writeFile.write(value[0]+"")
+                        havegames.append(value[1])
                 except Exception as e:
                     logging.error ('###### UNABLE TO WRITE TO GAMELIST FILE:'+str(e))
             except:
@@ -652,13 +759,14 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         writeFile.write("</gameList>")
         logging.info ('###### FILE CLOSING GAMELIST.XML')
         writeFile.close()
+        ###############################################################################
         bkcount = 1
         try:
             logging.info ('###### CHECKING IF NEED TO BACKUP OR NOT')
             chk  = config['config']['nobackup']
         except:
             logging.info ('###### THERE IS NO VALUE IN CONFIG')
-            chk = True 
+            chk = True
             logging.info ('######DEFAULTED TO TRUE')
         if not chk:
             logging.info ('###### I NEED TO DO BACKUP')
@@ -666,15 +774,37 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                 logging.info ('###### FILE '+str(bkcount)+' EXISTS')
                 bkcount = bkcount + 1
             logging.info ('###### FILE '+str(bkcount)+' DOES NOT EXIST - MAKING BACKUP')
-            result = copyfile(outXMLFile,outXMLFile+'.'+str(bkcount))
-            logging.info ('###### FILE '+str(bkcount)+' BACKUP DONE')
+            if ospath.isfile(outXMLFile):
+                result = copyfile(outXMLFile,outXMLFile+'.'+str(bkcount))
+                logging.info ('###### FILE '+str(bkcount)+' BACKUP DONE')
         logging.info ('###### COPYING NEW GAMELIST')
         result = copyfile(tmpxmlFile,outXMLFile)
         logging.info ('###### COPIED NEW GAMELIST')
+        try:
+            findmissing=config['config']['findmissing']
+        except:
+            findmissing = False
+        try:
+            doDownload=config['config']['downloadmissing']
+        except:
+            doDownload = False
+        if findmissing or doDownload:
+            logging.info ('##### GOING TO FIND MISSING GAMES')
+            findMissingGames(sysid,havegames,apikey,uuid,systems,q,doDownload)
+            logging.info ('##### DONE FINDING MISSING GAMES')
         if getmeout:
             logging.info ('###### INFORMING SCAN DONE')
             q.put(['scandone','scandone',False])
             logging.info ('###### INFORMED SCAN DONE')
+            q.put(['gamelabel','text',''])
+            q.put(['gamedesc','text',''])
+            q.put(['gameimage','source',''])
+            q.put(['sysImage','source',''])
+            q.put(['sysImageGame','source',''])
+            q.put(['sysLabel','text',trans['alldone']])
+            q.put(['scandone','scandone',True])
+            if ospath.isfile(hpath+'system.png'):
+                remove(hpath+'system.png')
             return
     q.put(['gamelabel','text',''])
     q.put(['gamedesc','text',''])
@@ -683,8 +813,8 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
     q.put(['sysImageGame','source',''])
     q.put(['sysLabel','text',trans['alldone']])
     q.put(['scandone','scandone',True])
-    if ospath.isfile('system.png'):
-        remove('system.png')
+    if ospath.isfile(hpath+'system.png'):
+        remove(hpath+'system.png')
 
 def getAbsRomPath(testpath):
     #print ('Received path '+testpath)

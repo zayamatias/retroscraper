@@ -8,6 +8,7 @@ environ["KIVY_TEXT"] = "sdl2"
 import kivy.graphics.cgl_backend.cgl_sdl2
 import kivy.uix.spinner
 import kivy.uix.progressbar
+import kivy.uix.treeview
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ObjectProperty
@@ -20,7 +21,7 @@ from kivy.uix.image import AsyncImage
 import scrapfunctions
 from threading import Thread
 from queue import Queue
-from kivy.clock import Clock
+from kivy.clock import Clock    
 from sys import exit as sysexit
 from argparse import ArgumentParser
 import curses
@@ -33,10 +34,7 @@ from kivy.config import Config
 from math import ceil
 from kivy.core.window import Window
 
-
-
-
-globalapikey=''
+globalapikey='PLACE_YOUR_KEY_HERE'
 version = '0.4'
 trans = dict()
 cli = False
@@ -106,7 +104,7 @@ class MainScreen(BoxLayout):
     def selectdir(self,pathtofile,selectedfile):
         self.config['config']['MountPath']=pathtofile
         self.ids['maptopath'].text=pathtofile
-        scrapfunctions.saveConfig(self.config)
+        scrapfunctions.saveConfig(self.config,self.q)
         self.dismiss_popup()
         self.confok = self.initializeConfig()
         self.pathnokshown = False
@@ -114,7 +112,7 @@ class MainScreen(BoxLayout):
     def load(self,pathtofile,selectedfile):
         logging.info ('##### LOADING SELECTED FILE '+str(selectedfile[0]))
         self.config['config']['SystemsFile']=selectedfile[0]
-        scrapfunctions.saveConfig(self.config)
+        scrapfunctions.saveConfig(self.config,self.q)
         self.dismiss_popup()
         self.confok = self.initializeConfig()
         self.pathnokshown = False
@@ -125,14 +123,49 @@ class MainScreen(BoxLayout):
 
 #### FILE CHOSER END
     def doDecorator(self,which):
+        if 'decorators' not in self.config['config'].keys():
+            self.config['config']['decorators']=dict()
+        if which not in self.config['config']['decorators'].keys():
+            self.config['config']['decorators']['which']=False
         try:
             self.config['config']['decorators'][which]= not self.config['config']['decorators'][which]
         except:
 
             self.config['config']['decorators'][which]= True
-        scrapfunctions.saveConfig(self.config)
+        scrapfunctions.saveConfig(self.config,self.q)
+
+    def doBoxes(self):
+        if 'preferbox' not in self.config['config'].keys():
+            self.config['config']['preferbox']=False
+        try:
+            self.config['config']['preferbox'] = not self.config['config']['preferbox']
+        except:
+            self.config['config']['preferbox'] = self.ids['preferbox'].active
+        scrapfunctions.saveConfig(self.config,self.q)
+
+    def doVideos(self):
+        if 'novideodown' not in self.config['config'].keys():
+            self.config['config']['novideodown']=False
+        try:
+            self.config['config']['novideodown'] = not self.config['config']['novideodown']
+        except:
+            self.config['config']['novideodown'] = self.ids['novideodown'].active
+        scrapfunctions.saveConfig(self.config,self.q)
+
+    def doClean(self):
+        if 'cleanmedia' not in self.config['config'].keys():
+            self.config['config']['cleanmedia']=False
+        try:
+            self.config['config']['cleanmedia'] = not self.config['config']['cleanmedia']
+        except:
+            self.config['config']['cleanmedia'] = self.ids['cleanmedia'].active
+        scrapfunctions.saveConfig(self.config,self.q)
 
     def doBezels(self,which):
+        if 'bezels' not in self.config['config'].keys():
+            self.config['config']['bezels']=False
+        if 'sysbezels' not in self.config['config'].keys():
+            self.config['config']['sysbezels']=False
         if which == 'game':
             try:
                 self.config['config']['bezels'] = not self.config['config']['bezels']
@@ -146,7 +179,7 @@ class MainScreen(BoxLayout):
         #logging.info (which)
         #logging.info (self.config['bezels'])
         #logging.info (self.config['sysbezels'])
-        scrapfunctions.saveConfig(self.config)
+        scrapfunctions.saveConfig(self.config,self.q)
 
 
     def deselectAll(self,btn=None):
@@ -174,7 +207,7 @@ class MainScreen(BoxLayout):
             if pl[1].lower()==lanname.lower():
                 self.config['config']['language']=pl[0]
                 break
-        scrapfunctions.saveConfig(self.config)
+        scrapfunctions.saveConfig(self.config,self.q)
         self.loadLanguage(self.config['config']['language'])
         self.initLabels()
 
@@ -218,7 +251,7 @@ class MainScreen(BoxLayout):
         self.ids['usegooglelab'].text=trans['usegoogle']
         self.ids['bezeldownlabel'].text=trans['bezels']
         self.ids['sysbezellabel'].text=trans['sysbezels']
-        self.ids['bezelssellabel'].text=trans['bezellabel']
+        self.ids['mediapreflabel'].text=trans['mediapreflabel']
         #self.ids['loadroot'].ids['loadbox'].ids['cancelbutton'].text=trans['cancel']
         #self.ids['selectbutton'].text=trans['select']
         #self.ids['okpopupbutton'].text=trans['okpopup']
@@ -226,7 +259,7 @@ class MainScreen(BoxLayout):
     def initializeConfig(self):
         global trans
         logging.info ('###### LOADING CONFIG')
-        self.config = scrapfunctions.loadConfig(logging)
+        self.config = scrapfunctions.loadConfig(logging,self.q)
         logging.info ('###### CONFIG LOADED')
         try:
             logging.info ('###### LOADING LANGUAGE FROM CONFIG')
@@ -261,7 +294,7 @@ class MainScreen(BoxLayout):
             self.ids['systemsfile'].text= self.config['config']['SystemsFile']
         except:
             logging.error ('###### NO SYSTEMS FILE LABEL')
-        logging.info ('###### GET SUSTEMS FROM BACKEND')
+        logging.info ('###### GET SYSTEMS FROM BACKEND')
         self.remoteSystems = apicalls.getSystemsFromAPI(self.apikey,self.uuid)
         logging.info ('###### GOT SYSTEMS FROM BACKEND '+str(bool(self.remoteSystems)))
         logging.info ('###### LOAD SYSTEMS INTO CONFIG')
@@ -389,6 +422,24 @@ class MainScreen(BoxLayout):
                 self.config['config']['usegoogle']=False
             self.ids['usegoogle'].active = self.config['config']['usegoogle']
             try:
+               self.novideos=self.config['config']['novideodown']
+            except Exception as e:
+                logging.info('###### '+str(e))
+                self.config['config']['novideodown']=False
+            self.ids['novideodown'].active = self.config['config']['novideodown']
+            try:
+               self.preferbox=self.config['config']['preferbox']
+            except Exception as e:
+                logging.info('###### '+str(e))
+                self.config['config']['preferbox']=False
+            self.ids['preferbox'].active = self.config['config']['preferbox']
+            try:
+               self.cleanmedia=self.config['config']['cleanmedia']
+            except Exception as e:
+                logging.info('###### '+str(e))
+                self.config['config']['cleanmedia']=False
+            self.ids['cleanmedia'].active = self.config['config']['cleanmedia']
+            try:
                 logging.info('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ BEZLES '+str(self.config['config']['bezels']))
                 self.ids['bezeldown'].active = self.config['config']['bezels']
             except Exception as e:
@@ -419,17 +470,17 @@ class MainScreen(BoxLayout):
 
     def toggleUseGoogle(self,btn=None):
         self.config['config']['usegoogle']=self.ids['usegoogle'].active
-        scrapfunctions.saveConfig(self.config)
+        scrapfunctions.saveConfig(self.config,self.q)
         return 
 
     def toggleDoBackup(self,btn=None):
         self.config['config']['dobackup']=self.ids['dobackup'].active
-        scrapfunctions.saveConfig(self.config)
+        scrapfunctions.saveConfig(self.config,self.q)
         return 
 
     def toggleUseDB(self,btn=None):
         self.config['config']['usedb']=self.ids['usedb'].active
-        scrapfunctions.saveConfig(self.config)
+        scrapfunctions.saveConfig(self.config,self.q)
         return 
 
 
@@ -498,7 +549,6 @@ class MainScreen(BoxLayout):
             except:
                 testpath = self.rompath
             if  self.rompath =='' or not path.isdir(testpath):
-                #print ('lllllllllllllllllllllllllllllllllllllllllllllllllll')
                 self.show_popup("pathnotok")
                 self.pathnokshown = True
                 self.pathok = False
@@ -575,7 +625,7 @@ class retroscraperApp(App):
         self.icon='icon.ico'
         self.title = 'retroScraper ['+str(version)+']'
         picnr = randint(1,13)
-        self.image_source = AsyncImage (source='http://77.68.23.83/res/back/'+str(picnr)+'.png')
+        self.image_source = AsyncImage (source=apicalls.backendURL()+'/res/back/'+str(picnr)+'.png')
         ms = MainScreen()
         ms.start()
         return ms
@@ -596,6 +646,7 @@ def signal_handler(sig, frame):
     sysexit(0)
 
 if __name__ == '__main__':
+    print ('Starting retroscraper - be Patient :-)')
     logging.basicConfig(filename='retroscraper.log', encoding='utf-8', level=logging.DEBUG)
     parser = ArgumentParser(description='RetroScraper...supercharge your roms with metadata!')
     parser.add_argument('--cli', help='Run in CLI (Command Line Interface Mode)',action='store_true')
@@ -611,10 +662,13 @@ if __name__ == '__main__':
     parser.add_argument('--hack', help='Add hack decorator from filename [Sonic (madhedgehog hack)]',action='store_true')
     parser.add_argument('--bezels', help='Download bezels for games',action='store_true')
     parser.add_argument('--sysbezels', help='Download system bezel if game bezel is not found',action='store_true')
+    parser.add_argument('--cleanmedia', help='Clean media directroies before downloading',action='store_true')
+    parser.add_argument('--linkmedia', help='Creat media links to save space (only in Linux/RPI)',action='store_true')
     argsvals = vars(parser.parse_args())
     print ('Loading RetroScraper config File')
     logging.info ('###### LOADING RETROSCRAPER CONFIG')
-    config = scrapfunctions.loadConfig(logging)
+    q=Queue()
+    config = scrapfunctions.loadConfig(logging,q)
     try:
         cli = argsvals['cli']
     except:
@@ -708,7 +762,7 @@ if __name__ == '__main__':
         #signal.signal(signal.SIGINT, lambda signum, frame: signal_handler(signum, frame, scanqueue))
         q=Queue()
         if not scrapfunctions.isValidVersion(version,apikey,uuid):
-            print ('SORRY! YOU NEED TO UPGRADE TO THE LATEST VERSION http://77.68.23.83/download.html')
+            print ('SORRY! YOU NEED TO UPGRADE TO THE LATEST VERSION '+apicalls.backendURL()+'/download.html')
             logging.error('###### THIS IS NOT THE LATEST VERSION OF RETROSCRAPER')
             sysexit()
         logging.debug('###### CONFIG :'+str(config))
@@ -722,7 +776,7 @@ if __name__ == '__main__':
                 print ('There seems to be an error in your retroscraper config file, I cannot find the systems configuration file (usually something like es_systems.cfg)')
                 logging.error('###### SYSTEMS FILE CANNOT BE FOUND '+str(config['config']['SystemsFile']))
                 sysexit()
-        scrapfunctions.saveConfig(config)
+        scrapfunctions.saveConfig(config,scanqueue)
         print ('Loading systems from Backend')
         logging.info ('###### LOADING SYSTEMS FROM BACKEND')
         remoteSystems = apicalls.getSystemsFromAPI(apikey,uuid)

@@ -9,6 +9,28 @@ from io import BytesIO
 import platform
 from pathlib import Path
 import os
+import sys
+
+def backendURL():
+    #return "http://192.168.8.160/"
+    return "http://77.68.23.83/"
+
+def download_file(url,dest,queue):
+ with open(dest, "wb") as f:
+    print("Downloading %s" % dest)
+    response = requestsget(url, stream=True)
+    total_length = response.headers.get('content-length')
+    if total_length is None: # no content length header
+        f.write(response.content)
+    else:
+        dl = 0
+        total_length = int(total_length)
+        for data in response.iter_content(chunk_size=4096):
+            dl += len(data)
+            f.write(data)
+            done = int(50 * dl / total_length)
+            sys.stdout.write("\r[%s%s]" % ('=' * done, ' ' * (50-done)) )    
+            sys.stdout.flush()
 
 def simpleCall(url):
     #logging.debug ('###### CALLING URL '+URL)
@@ -52,7 +74,7 @@ def getImageAPI(url,destfile,apikey,uuid,force=False):
         pass
     myHeader = {"apikey":apikey,"uuid":uuid,"plat":platform.platform(),"User-Agent": "Retroscraper"}
     retries = 10
-    finalURL = 'http://77.68.23.83'+url
+    finalURL = backendURL()+url
     while retries > 0:
         try:
             r = requestsget(finalURL, stream=True, headers=myHeader)
@@ -65,12 +87,12 @@ def getImageAPI(url,destfile,apikey,uuid,force=False):
                         img = Image.open(BytesIO(r.content))
                         return img
                 if int(Path(destfile).stat().st_size) < 2:
-                    finalUrl = 'http://77.68.23.83/api/medias/0/noimage.png'
+                    finalUrl = backendURL()+'/api/medias/0/noimage.png'
                 else:
                     return True
             else:
                 if ('.png' in url) and r.status_code==404:
-                    r = requestsget('http://77.68.23.83/api/medias/0/noimage.png', stream=True, headers=myHeader)
+                    r = requestsget(backendURL()+'/api/medias/0/noimage.png', stream=True, headers=myHeader)
                     if r.status_code == 200:
                         with open(destfile, 'wb') as f:
                             r.raw.decode_content = True
@@ -128,11 +150,11 @@ def postCallHandler(url,apikey,uuid,data):
             retries = retries -1
     myResponse = requestsResponse()
     myResponse.status_code=404
-    type(myResponse).text='{"error":"cannot send to API"}'.encode('utf-8')
+    type(myResponse).text='{"response":{"error":"cannot send to API"}'.encode('utf-8')
     return myResponse
 
 def getVersion(apikey,uuid):
-    url = 'http://77.68.23.83/api/version'
+    url = backendURL()+'/api/version'
     myVersion = getCallHandler(url,apikey,uuid)
     if myVersion.status_code == 200:
         return myVersion.json()
@@ -140,7 +162,7 @@ def getVersion(apikey,uuid):
         return '{"response":{"version":"error"}}'
 
 def getLanguagesFromAPI(apikey,uuid):
-    url = 'http://77.68.23.83/api/translations.json'
+    url = backendURL()+'/api/translations.json'
     result = getCallHandler(url, apikey,uuid)
     if result.status_code == 404:
         return []
@@ -148,7 +170,7 @@ def getLanguagesFromAPI(apikey,uuid):
         return result.json()['translations']
 
 def getSystemsFromAPI(apikey,uuid):
-    url = 'http://77.68.23.83/api/systems'
+    url = backendURL()+'/api/systems'
     result = getCallHandler(url, apikey,uuid)
     if result.status_code == 404:
         return []
@@ -156,9 +178,50 @@ def getSystemsFromAPI(apikey,uuid):
         return result.json()['response']
 
 def getCompaniesFromAPI(apikey,uuid):
-    url = 'http://77.68.23.83/api/companies'
+    url = backendURL()+'/api/companies'
     result = getCallHandler(url, apikey,uuid)
     if result.status_code == 404:
         return []
     else:
         return result.json()['response']
+
+def getAllGames(sysid,apikey,uuid):
+    url = backendURL()+'/api/system/'+str(sysid)
+    result = getCallHandler(url, apikey,uuid)
+    if result.status_code == 404:
+        return []
+    else:
+        return result.json()['Games']
+
+def getGame(gameid,apikey,uuid):
+    url = backendURL()+'/api/id/'+str(gameid)
+    result = getCallHandler(url, apikey,uuid)
+    if result.status_code == 404:
+        return []
+    else:
+        return result.json()['response']
+
+def getSHA1(sha1,apikey,uuid):
+    url = backendURL()+'/api/sha1/'+sha1
+    return getCallHandler(url, apikey,uuid)
+
+def getCRC(crc,apikey,uuid):
+    url = backendURL()+'/api/crc/'+crc
+    return getCallHandler(url, apikey,uuid)
+
+def getMD5(md5,apikey,uuid):
+    url = backendURL()+'/api/md5/'+md5
+    return getCallHandler(url, apikey,uuid)
+
+def getSearch(thissys,partname, apikey,uuid):
+    url = backendURL()+'/api/search/'+thissys+'/'+partname
+    return getCallHandler(url, apikey,uuid)
+
+def getURL(URL, apikey,uuid):
+    url = backendURL()+URL
+    return getCallHandler(url, apikey,uuid)
+
+def postSubmit (subJson,apikey,uuid):
+    url = backendURL()+'/api/submit'
+    return postCallHandler(url,apikey,uuid,subJson)
+
