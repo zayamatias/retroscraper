@@ -23,7 +23,7 @@
                         TabbedPanelItem:
                                 id: tabone
                                 text: 'Games'
-                                font_name: 'font.ttf'
+                                font_name: 'sonic.ttf'
                                 GridLayout:
                                         size_hint: (1,1)
                                         orientation: 'lr-tb'
@@ -37,7 +37,7 @@
                                                         size_hint: (1,None)
                                                         id: gamelabel
                                                         text: ''
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         markup: True
                                                         valign: 'top'
@@ -47,7 +47,7 @@
                                                 Label:
                                                         id: gamedesc
                                                         halign: 'left'
-                                                        #font_name: 'font.ttf'
+                                                        #font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         text_size: self.size
                                                         valign: 'top'
@@ -79,14 +79,14 @@
                         TabbedPanelItem:
                                 id: tabtwo
                                 text: 'Systems'
-                                font_name: 'font.ttf'
+                                font_name: 'sonic.ttf'
                                 GridLayout:
                                         cols:1
                                         orientation: 'lr-tb'
                                         Label:
                                                 id: availsysLabel
                                                 text: 'YOUR AVAILABLE SYSTEMS'
-                                                font_name: 'font.ttf'
+                                                font_name: 'sonic.ttf'
                                                 size_hint: (1,None)
                                                 size:(0,30)
                                                 valign: 'top'
@@ -100,7 +100,7 @@
                                                 id: sysLabel
                                                 size_hint: (1, 1)                        
                                                 text: 'System'
-                                                font_name: 'font.ttf'
+                                                font_name: 'sonic.ttf'
                                                 font_size: 14
                                                 size: self.texture_size
                                                 outline_color: (0,0,0)
@@ -114,7 +114,7 @@
                                 id: tabthree
                                 sysconfig: sysconfig.__self__
                                 text: 'Configuration'
-                                font_name: 'font.ttf'
+                                font_name: 'sonic.ttf'
                                 GridLayout:
                                         size_hint_y:None
                                         size_y:10
@@ -129,7 +129,7 @@
                                                         id:filesyslabel
                                                         size_hint: (None,1)
                                                         text: 'SYSTEMS FILE:'
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         size: self.texture_size
                                                         size: 200,10
                                                         font_size: 14
@@ -138,14 +138,14 @@
                                                 TextInput:
                                                         size_hint: (None,1)
                                                         id: systemsfile
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         size: self.texture_size
                                                         font_size: 14
                                                         size: 800,10
                                                         text: ''
                                                 Button:
                                                         id:sysconfig
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         text: 'Select File'
                                                         #background_normal: ''
@@ -163,7 +163,7 @@
                                                         text: 'systems rom path:'
                                                         size_hint: (None,None)
                                                         valign: 'top'
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size:200,25
                                                         outline_color: (0,0,0)
@@ -173,7 +173,7 @@
                                                         size_hint: (None,None)
                                                         valign: 'top'
                                                         text: ''
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size:200,25
                                                         outline_color: (0,0,0)
@@ -184,7 +184,7 @@
                                                         size_hint: (None,None)
                                                         valign: 'top'
                                                         text: 'Map to Path:'
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size:200,25
                                                         outline_color: (0,0,0)
@@ -194,13 +194,13 @@
                                                         size_hint: (None,None)
                                                         valign: 'top'
                                                         text: ''
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         multiline: False
                                                         size:200,25
                                                 Button:
                                                         id:selrompath
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         text: "Select Directory"
@@ -219,7 +219,7 @@
                                                 Label:
                                                         id: gamedecorlabel
                                                         text:'game name decorators (taken from filename)'
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (1,None)
                                                         size: (100,30)
@@ -238,7 +238,7 @@
                                                 Label:
                                                         id: versiondeclabel
                                                         text:'Add Version [Sonic V1.1]'
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -251,7 +251,7 @@
                                                         on_press:root.doDecorator('country')
                                                 Label:
                                                         id: countrydeclabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -265,7 +265,7 @@
                                                         on_press:root.doDecorator('hack')
                                                 Label:
                                                         id: hackdeclabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -279,7 +279,7 @@
                                                         on_press:root.doDecorator('disk')
                                                 Label:
                                                         id: diskdeclabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -297,7 +297,7 @@
                                                 Label:
                                                         id: mediapreflabel
                                                         text:'Download Media Preferences'
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (1,1)
                                                         size: (100,30)
@@ -314,7 +314,7 @@
                                                         on_press:root.doBoxes()
                                                 Label:
                                                         id: preferboxlabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -328,7 +328,7 @@
                                                         on_press:root.doVideos()
                                                 Label:
                                                         id: novideodownlabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -342,7 +342,7 @@
                                                         on_press:root.doBezels('game')
                                                 Label:
                                                         id: bezeldownlabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -356,7 +356,7 @@
                                                         on_press:root.doBezels('system')
                                                 Label:
                                                         id: sysbezellabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -370,7 +370,7 @@
                                                         on_press:root.doClean()
                                                 Label:
                                                         id: cleanmedialabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -384,7 +384,7 @@
                                                         on_press:root.doBezels('system')
                                                 Label:
                                                         id: optimizemedialabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -397,7 +397,7 @@
                                                 HSeparator:
                                                 Label:
                                                         id: preflanlabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (1,None)
                                                         size: (100,30)
@@ -406,7 +406,7 @@
                                                         outline_width: 1
                                                 Spinner:
                                                         id: langchoice
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (1,None)
                                                         size: (100,30)
@@ -421,7 +421,7 @@
                                                         on_press: root.toggleUseGoogle('bah')
                                                 Label:
                                                         id:usegooglelab
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -439,7 +439,7 @@
                                                         on_press: root.toggleDoBackup('bah')
                                                 Label:
                                                         id: backuplabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (1,None)
                                                         size: (100,30)
@@ -453,7 +453,7 @@
                                                         on_press: root.toggleUseDB('bah')
                                                 Label:
                                                         id:usedblabel
-                                                        font_name: 'font.ttf'
+                                                        font_name: 'sonic.ttf'
                                                         font_size: 14
                                                         size_hint: (None,None)
                                                         size: (100,30)
@@ -468,7 +468,7 @@
                         TabbedPanelItem:
                                 id: tabfour
                                 text: 'Errors'
-                                font_name: 'font.ttf'
+                                font_name: 'sonic.ttf'
                                 ScrollView:
                                         scroll_type: ['bars']
                                         bar_width: 10
@@ -495,7 +495,7 @@
                         Button:
                                 id: startScraping
                                 text: 'Waiting for proper configuration'
-                                font_name: 'font.ttf'
+                                font_name: 'sonic.ttf'
                                 font_size: 14
                                 on_release: root.ScanToggle()
                                 size_hint: 1,None
@@ -523,7 +523,7 @@
                                 text: "Select"
                                 on_release: root.load(filechooser.path, filechooser.selection)                
 <MyPopup>:
-        title_font: 'font.ttf'
+        title_font: 'sonic.ttf'
         title_size: 14
         BoxLayout:
                 id: popupbox
@@ -534,14 +534,14 @@
                 Label:
                         id: popuplabel
                         text: 'TEST LABEL'
-                        font_name: 'font.ttf'
+                        font_name: 'sonic.ttf'
                         font_size: 12
                         size_hint_y: 0.5
                         text_size: self.width, None
                         height: self.texture_size[1]
                 Button:
                         id:okpopupbutton
-                        font_name: 'font.ttf'
+                        font_name: 'sonic.ttf'
                         font_size: 14
                         text: 'Got It!'
                         on_release: root.cancel()

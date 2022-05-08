@@ -23,6 +23,7 @@ from threading import Thread
 from queue import Queue
 from kivy.clock import Clock    
 from sys import exit as sysexit
+import sys
 from argparse import ArgumentParser
 import curses
 from time import sleep
@@ -33,8 +34,18 @@ import apicalls
 from kivy.config import Config
 from math import ceil
 from kivy.core.window import Window
+from kivy.resources import resource_add_path, resource_find
+import os
 
-globalapikey='PLACE_YOUR_KEY_HERE'
+
+# nuitka builds
+try:
+    exec_dir = path.dirname(path.realpath(sys.argv[0]))
+    environ['KIVY_DATA_DIR'] = path.join(exec_dir, 'data')
+except:
+    pass
+
+globalapikey=''
 version = '0.4'
 trans = dict()
 cli = False
@@ -332,7 +343,7 @@ class MainScreen(BoxLayout):
                     lbl.font_size=10
                     lbl.outline_color=(0,0,0)
                     lbl.outline_width=1
-                    lbl.font_name='font.ttf'
+                    lbl.font_name='sonic.ttf'
                     lbl.text=trans['all']
                     lbl.text_size=(145,20)
                     lbl.valign='center'
@@ -353,7 +364,7 @@ class MainScreen(BoxLayout):
                     lbl.font_size=10
                     lbl.outline_color=(0,0,0)
                     lbl.outline_width=1
-                    lbl.font_name='font.ttf'
+                    lbl.font_name='sonic.ttf'
                     lbl.text_size=(145,20)
                     lbl.valign='center'
                     lbl.text=syst['name']
@@ -575,7 +586,7 @@ class MainScreen(BoxLayout):
                     try:
                         errGrid = self.ids['errorgrid']
                         errGrid.bind(minimum_height=errGrid.setter('height'))
-                        newlabel = Label(text=event[2],size_hint=(None,None),outline_color=(0,0,0),outline_width=1,font_name='font.ttf',font_size= 12,padding_x=5)
+                        newlabel = Label(text=event[2],size_hint=(None,None),outline_color=(0,0,0),outline_width=1,font_name='sonic.ttf',font_size= 12,padding_x=5)
                         newlabel._label.refresh()
                         newlabel.size=newlabel._label.texture.size
                         errGrid.add_widget(newlabel)
@@ -631,6 +642,13 @@ class retroscraperApp(App):
         return ms
 
 #Factory.register('Root', cls=MainScreen)
+
+def resourcePath():
+    '''Returns path containing content - either locally or in pyinstaller tmp file'''
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS)
+
+    return os.path.join(os.path.abspath("."))
 
 def showrandom(q):
     while True:
@@ -726,7 +744,7 @@ if __name__ == '__main__':
         config['config']['nobackup']= argsvals['nobackup']
     except:
         config['config']['nobackup']= False
-    
+    resource_add_path(resourcePath()) 
     if not cli:
         ## We just need to verify if there's an option to run in wndowed mode or not
         plat = system().upper()
