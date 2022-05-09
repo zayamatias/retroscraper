@@ -7,7 +7,7 @@ RPI binary has been compiled on an actual retropie image (latest version).
 
 You need to install the requirements for you platform before being able to run it from source.
 
-This scraper uses its own database, which has been compiled from many sources on the net and keeps extending. If this is a problem for you, do not run this software.
+This scraper uses its own backend, which has been compiled from many sources on the net and keeps extending. If this is a problem for you, do not run this software.
 
 This scraper will create a local DB with the checksum of your roms, for purposes of speed if you have large files. If this is a problem for you, use the --nodb modifier.
 
@@ -23,7 +23,7 @@ In order to run from the source, you will need an API key, pls reuest this to re
 
 ### From precompiled binaries:
 
-Simply download the pre-compiled binaries for your system from the [releases page](https://github.com/zayamatias/retroscraper/releases). Currently windows, rpi and linux_x64 exist. For linux version you need to do 'chmod +rwx retroscraper' and for rpi 'chmod +rwx retroscraper.rpi' to be able to execute it.
+Simply download the pre-compiled binaries for your system from the [releases page](https://github.com/zayamatias/retroscraper/releases). Currently windows, rpi and linux_x64 exist. For linux version you need to do 'chmod +rwx retroscraper.linux' and for rpi 'chmod +rwx retroscraper.rpi' to be able to execute it.
 
 At first run it will create an empty retroscraper.cfg file, which will be used to keep the configuration as you edit it.
 
