@@ -242,8 +242,8 @@ def loadSystems(config,apikey,uuid,remoteSystems,q,trans,logging):
                 logging.info ('###### PARSED FILE')
             except:
                 logging.error ('###### DEFINITELY BAD XML!')
-                q.put([trans['xmlerr'],'popup',trans['xmlerrmsg']])
-                return False
+                #q.put([trans['xmlerr'],'popup',trans['xmlerrmsg']])
+                return 'XMLERROR'
     try:
         logging.info ('###### GETTING ROOT ELEMENT')
         root = tree.getroot()

@@ -164,7 +164,7 @@ def getVersion(apikey,uuid):
 def getLanguagesFromAPI(apikey,uuid):
     url = backendURL()+'/api/translations.json'
     result = getCallHandler(url, apikey,uuid)
-    if result.status_code == 404:
+    if result.status_code != 200:
         return []
     else:
         return result.json()['translations']
@@ -172,7 +172,7 @@ def getLanguagesFromAPI(apikey,uuid):
 def getSystemsFromAPI(apikey,uuid):
     url = backendURL()+'/api/systems'
     result = getCallHandler(url, apikey,uuid)
-    if result.status_code == 404:
+    if result.status_code != 200:
         return []
     else:
         return result.json()['response']
@@ -188,7 +188,7 @@ def getCompaniesFromAPI(apikey,uuid):
 def getAllGames(sysid,apikey,uuid):
     url = backendURL()+'/api/system/'+str(sysid)
     result = getCallHandler(url, apikey,uuid)
-    if result.status_code == 404:
+    if result.status_code != 200:
         return []
     else:
         return result.json()['Games']
@@ -196,7 +196,7 @@ def getAllGames(sysid,apikey,uuid):
 def getGame(gameid,apikey,uuid):
     url = backendURL()+'/api/id/'+str(gameid)
     result = getCallHandler(url, apikey,uuid)
-    if result.status_code == 404:
+    if result.status_code != 200:
         return []
     else:
         return result.json()['response']
