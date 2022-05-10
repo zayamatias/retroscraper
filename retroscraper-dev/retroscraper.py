@@ -36,7 +36,7 @@ from math import ceil
 from kivy.core.window import Window
 from kivy.resources import resource_add_path, resource_find
 import os
-
+from kivy_garden import filebrowser
 
 # nuitka builds
 try:
@@ -121,12 +121,13 @@ class MainScreen(BoxLayout):
         self.pathnokshown = False
 
     def load(self,pathtofile,selectedfile):
-        logging.info ('##### LOADING SELECTED FILE '+str(selectedfile[0]))
-        self.config['config']['SystemsFile']=selectedfile[0]
-        scrapfunctions.saveConfig(self.config,self.q)
-        self.dismiss_popup()
-        self.confok = self.initializeConfig()
-        self.pathnokshown = False
+        if selectedfile:
+            logging.info ('##### LOADING SELECTED FILE '+str(selectedfile[0]))
+            self.config['config']['SystemsFile']=selectedfile[0]
+            scrapfunctions.saveConfig(self.config,self.q)
+            self.dismiss_popup()
+            self.confok = self.initializeConfig()
+            self.pathnokshown = False
  
     def stopScanning(self,btn):
         self.scanqueue.put(True)
@@ -137,7 +138,7 @@ class MainScreen(BoxLayout):
         if 'decorators' not in self.config['config'].keys():
             self.config['config']['decorators']=dict()
         if which not in self.config['config']['decorators'].keys():
-            self.config['config']['decorators']['which']=False
+            self.config['config']['decorators'][which]=False
         try:
             self.config['config']['decorators'][which]= not self.config['config']['decorators'][which]
         except:
@@ -214,6 +215,8 @@ class MainScreen(BoxLayout):
 
     def selectLang(self,btn=None):
         lanname = self.ids['langchoice'].text
+        if 'language' not in self.config.keys():
+            self.config['config']['language']='en'
         for pl in self.supportedlanguages.items():
             if pl[1].lower()==lanname.lower():
                 self.config['config']['language']=pl[0]
@@ -274,6 +277,8 @@ class MainScreen(BoxLayout):
         logging.info ('###### CONFIG LOADED')
         try:
             logging.info ('###### LOADING LANGUAGE FROM CONFIG')
+            if 'language' not in self.config['config'].keys():
+                self.config['config']['language']='en'
             self.loadLanguage(self.config['config']['language'])
             logging.info ('###### LANGUAGE LOADED '+self.config['config']['language'])
         except:
@@ -313,8 +318,11 @@ class MainScreen(BoxLayout):
         logging.info ('###### LOADED SYSTEMS INTO CONFIG '+str(bool(self.systems)))
         if not self.systems:
             ## Special case with API
-            self.show_info_popup('Backend Issue!','Cannot retrieve the systems from the backend.Are you connected to the internet?',True)
-        else:
+            self.show_info_popup('Backend Issue!','Cannot retrieve the systems from the backend.Are you connected to the internet?',False)
+        if self.systems =='XMLERROR':
+            self.systems=[]
+            self.show_info_popup('Systems Error!','There seems to be an error with the Systems File, please check',False)
+        if self.systems:
             try:
                 self.ids['systemschoice'].remove_widget(self.ids['systemschoice'].children[0])
             except:

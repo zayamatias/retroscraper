@@ -508,21 +508,11 @@
                 size: root.size
                 pos: root.pos
                 orientation: "vertical"
-                FileChooserListView:
+                FileBrowser:
                         id: filechooser
                         filters: ['*.cfg']
-                BoxLayout:
-                        id:loadbox
-                        size_hint_y: None
-                        height: 30
-                        Button:
-                                id:cancelbutton
-                                text: "Cancel"
-                                on_release: root.cancel()
-                        Button:
-                                id:selectbutton
-                                text: "Select"
-                                on_release: root.load(filechooser.path, filechooser.selection)                
+                        on_success: root.load(filechooser.path, filechooser.selection)
+                        on_canceled: root.cancel()
 <MyPopup>:
         title_font: 'sonic.ttf'
         title_size: 14
