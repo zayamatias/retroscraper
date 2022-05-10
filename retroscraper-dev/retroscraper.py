@@ -37,6 +37,12 @@ from kivy.core.window import Window
 from kivy.resources import resource_add_path, resource_find
 import os
 from kivy_garden import filebrowser
+import kivy.uix.splitter
+import kivy.uix.stacklayout
+import platform
+
+if platform.system().lower().startswith('win'):
+    import win32timezone
 
 # nuitka builds
 try:

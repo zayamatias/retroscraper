@@ -227,6 +227,13 @@ def loadSystems(config,apikey,uuid,remoteSystems,q,trans,logging):
         return []
     tree = ET.ElementTree()
     logging.info ('###### OPENING FILE')
+    try:
+        tst = open(config['config']['SystemsFile'], 'r')
+        tst.close()
+    except:
+        logging.error ('###### CANNOT READ SYSTEMS FILE!')
+        q.put(['errorlabel','text','Cannot read systems file!'])
+        return 'XMLERROR'
     with open(config['config']['SystemsFile'], 'r') as xml_file:
         logging.info ('###### OPENED FILE')
         try:
