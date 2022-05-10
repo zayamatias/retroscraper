@@ -19,7 +19,7 @@ It will create a backup of the gamelist.xml files by default, use the --nobackup
 
 Excute as 'python retroscraper.py'.
 
-**In order to run from the source, you will need an API key, pls reuest this to retroscraper[at]gmail.com**
+**In order to run from the source, you will need an API key, pls request one to retroscraper[at]gmail.com**
 
 ### From precompiled binaries:
 
