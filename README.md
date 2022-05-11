@@ -131,6 +131,6 @@ Since latest version, RetroScraper will autoamtically generate a backup of your 
 
 #### CLI Specific flags:
 
---systems : provide a list of systems you will like to have scanned, separated by ','. The names are the same as the ones found in your es_systems.cfg file, under the _<system><name>SYSTEMNAME</name></system>_ tag.
+--systems : provide a list of systems you will like to have scanned, separated by comma [_,_].The names are the same as the ones found in your es_systems.cfg file, under the _\<system\>\<name\>SYSTEMNAME\</name\>\</system\>_ tag.
 
 
