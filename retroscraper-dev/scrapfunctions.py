@@ -1,3 +1,4 @@
+import logging
 from re import findall,sub,search
 from xml.sax.saxutils import escape
 from sys import exit as sysexit
@@ -47,20 +48,24 @@ def getArcadeName(name):
     #logging.info ('###### FOUND GAME IN ARCADEITALIA '+gamename)
     return gamename
 
-def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid):
+def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid,logging):
     filename = filename.replace ('\\','/')
     filename = filename[filename.rindex('/')+1:]
     result = apicalls.getSHA1(sha1, apikey,uuid)
     nosha = False
     if result.status_code == 404:
+        logging.info ('###### COULD NOT FIND SHA1 FOR FILE '+filename)
         nosha = True
         result = apicalls.getCRC(crc, apikey,uuid)
         if result.status_code == 404:
+            logging.info ('###### COULD NOT FIND CRC FOR FILE '+filename)
             result = apicalls.getMD5(md5, apikey,uuid)
             if result.status_code == 404:
+                logging.info ('###### COULD NOT FIND MD5 FOR FILE '+filename)
                 ### remove both lines below
                 fname = filename[:filename.rindex('.')]
                 if 75 in system:
+                    logging.info ('###### ITS AN ARCADE GAMEE '+filename)
                     #print ('going for arcadename')
                     arcadeName = getArcadeName(filename)
                     #print (arcadeName)
@@ -73,61 +78,82 @@ def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid):
                         sysexit()
 
                 else:
+                    logging.info ('###### ITS NOT AN ARCADE GAMEE '+filename)
                     partnames =  sub('[^A-Za-z0-9]+',' ',fname).lower().split()
                 exclude_words = ['trsi','bill','sinclair','part','tape','gilbert','speedlock','erbesoftwares','aka','erbe','iso','psn','soft','crack','dsk','release','z80','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','prototype','pirate','world','fre','h3c','jue','edition','c128','unl','1983','1984','ltd','side','1985','1986','1987','software','disabled','atx','bamcopy','playable','data','boot','xenophobia','code','dump','compilation','cd1','cd2','cd3','cd4','paradox','19xx','1988','1989','1990','1991','1992','1993','1994','1995','1996','manual','csl','defjam','files','pdx','doscopy','bootable','cracktro','flashtro','flt','checksum','error','qtx','aga','corrupt','disk1','disk2','disk3','disk4','disk5','disk6','italy','spain','psx','disc','demo','rev','slus','replicants','germany','france','start','tsth','patch','newgame','sega','beta','hack','rus','h1c','h2c','the','notgame','zzz','and','pal','ntsc','disk','file','inc','fullgame','48k','128k','16k','tap','tzx','usa','japan','europe','d64','t64','c64']
                 sfname = sub("[\(\[].*?[\)\]]", "", fname)
                 sfname = sfname.replace('_',' ').strip()
                 for thissys in system:
+                    logging.info ('###### LOOKING IN SYSTEM '+str(thissys))
                     for partname in partnames:
+                        logging.info ('###### LOOKING FOR SYSTEM '+str(partname))
                         if len(partname)>3 and not (partname.lower() in exclude_words) :
                             result = apicalls.getSearch(str(thissys),partname, apikey,uuid)
                             if result.status_code !=404:
+                                logging.info ('###### FOUND IN THE BACKEND')
                                 try:
                                     jsob = result.json()
-                                    print (jsob)
+                                    #print (jsob)
                                     respobj = jsob['response']
-                                    print (respobj)
+                                    #print (respobj)
+                                    logging.info ('###### IT S A GOOD JSON')
                                     try:
                                         myresults = respobj['results']
+                                        logging.info ('###### THERE ARE RESULTS')
                                     except:
+                                        logging.error ('###### I GOT SOMETHING STRANGE,, NO RESULTS FOR A SEARCH!')
                                         continue
                                 except Exception as e:
-                                    print ('ERROR IN JSON RECEIVED FROM BACKEND '+str(thissys)+' SEARCHING FOR '+partname)
-                                    print (str(result.content))
-                                    print ('ERROR '+str(e))
+                                    logging.error ('ERROR IN JSON RECEIVED FROM BACKEND '+str(thissys)+' SEARCHING FOR '+partname+' '+str(e))
                                     continue
                                 for searchable in myresults:
+                                    logging.info ('###### LOOKING FOR MATCHES')
                                     if sfname.lower() == searchable['name']['text'].lower():
+                                        logging.info ('###### THERE IS A MATCH')
                                         result = apicalls.getURL(searchable['gameURL'], apikey,uuid)
                                         submitJson = '{"request": {"type": "romnotincluded","data": {"gameUrl":"'+searchable['gameURL']+'","systemid": "'+str(system)+'","filename": "'+filename+'","match":"'+fname+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
-                                        subresult = apicalls.postSubmit (submitJson,apikey,uuid)
+                                        subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging)
                                         return result.json()['response']
+                                logging.info ('###### THERE IS NO MATCH SO FAR')
+                logging.info ('###### I GIVE UP LOOKING, WILL INFORM THE BACKEND')
                 submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "'+filename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
-                result = apicalls.postSubmit (submitJson,apikey,uuid)
+                logging.info ('###### GOING TO SUBMIT TO BACKEND')
+                result = apicalls.postSubmit (submitJson,apikey,uuid,logging)
+                logging.info ('###### SUBMITTED TO BACKEND')
                 response = {"game": {"ratings": [], "dates": [], "names": [{'text':filename,'region':'default'}], "roms": [], "cloneof": "0", "genres": [],\
                             "notgame": "false", "system": {"url": "/api/system/"+str(system[0]), "id": int(system[0])}, "players": {"text": "Unknown"},\
                             "synopsis": [{"text":"Could not find Synopsis","language":"en"}], "editor": {}, "medias": [], "developer": {}, "id":0,\
                             "modes": []}}
+                logging.info ('###### RETURNING EMPTY STANDARD RESPONSE')
                 return response
             else:
                 nosha=True
         else:
             nosha=True
     try:
+        logging.info ('###### I FOUND THE GAME')
         response = result.json()['response']
         if nosha:
+            logging.info ('###### I FOUND NO SHA1 BUT I KNOW WHICH GAME IT IS, TELLING THE BACKEND')
             try:
+                logging.info ('###### I KNOW WHICH GAME ID IT IS, SO INFORM')
                 gameid = str(response['game']['id'])
             except:
-                gameid = '1'
+                logging.error ('###### I SHOULD NOT BE HERE!! THERE MUST BE A GAME ID')
+                gameid = '99999999999999999999999999999999'
             submitJson = '{"request": {"type": "nosha","data": {"gameid":"'+gameid+'","systemid": "'+str(system)+'","filename": "'+filename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}'
-            subresult = apicalls.postSubmit (submitJson,apikey,uuid)
+            logging.info ('###### TELLING THE BACKEND')
+            subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging)
     except Exception as e:
-        print ('GETTING INFO FROM API: '+str(result)+' ERROR '+str(e))
-        print (system,filename,sha1,md5,crc)
+        logging.error ('###### GETTING INFO FROM API: '+str(result)+' ERROR '+str(e))
+        logging.error ('###### '+str(system)+','+str(filename)+','+str(sha1)+','+str(md5)+','+str(crc))
         submitJson = '{"request": {"type": "error","data": {"filename": "'+filename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}'
-        subresult = apicalls.postSubmit (submitJson,apikey,uuid)
-        response = None
+        logging.info ('###### TELLING THE BACKEND I FOUND SOMETHING STRANGE')
+        subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging)
+        response = {"game": {"ratings": [], "dates": [], "names": [{'text':filename,'region':'default'}], "roms": [], "cloneof": "0", "genres": [],\
+                    "notgame": "false", "system": {"url": "/api/system/"+str(system[0]), "id": int(system[0])}, "players": {"text": "Unknown"},\
+                    "synopsis": [{"text":"Could not find Synopsis","language":"en"}], "editor": {}, "medias": [], "developer": {}, "id":0,\
+                    "modes": []}}
         #sysexit()
     return response
 
@@ -377,7 +403,7 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
         return
     mysha1,mymd5,mycrc = getChecksums(file,config)
     ## PROCESS FILE AND START DOING MAGIC
-    result = getInfoFromAPI (system['id'],file,mysha1,mymd5,mycrc,apikey,uuid)
+    result = getInfoFromAPI (system['id'],file,mysha1,mymd5,mycrc,apikey,uuid,logging)
     if (not result) or ('game' not in result.keys()):
         ### THERE WAS AN ERROR GETTING INFORMATION FOR THIS FILE
         logging.error('###### I COULD NOT GET THE GAME INFORMATION FROM API '+str(result))
@@ -636,14 +662,17 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         return
     getmeout = False
     emptyGameTag = "<game><rating>$RATING</rating><lastplayed/><name>$NAME</name><marquee>$MARQUEE</marquee><image>$IMAGE</image><publisher>$PUBLISHER</publisher><releasedate>$RELEASEDATE</releasedate><players>$PLAYERS</players><video>$VIDEO</video><genre>$GENRE</genre><path>$PATH</path><playcount/><developer>$DEVELOPER</developer><thumbnail/><desc>$DESCRIPTION</desc></game>"
+    logging.info ('###### DO ALL SYSTEMS?')
     try:
-        doallsystems = selectedSystems[1]=trans['all'] 
+        doallsystems = (selectedSystems[1]==trans['all'])
     except:
         if not selectedSystems:
             doallsystems=True
         else:
             doallsystems=False
+    logging.info ('###### '+str(doallsystems))
     for system in systems:
+        logging.info ('###### SYSTEM '+str(system))
         if (system['name'].lower() not in selectedSystems) and (selectedSystems!=[]) and not doallsystems:
             continue
         logging.info ('###### DOING '+str(system))

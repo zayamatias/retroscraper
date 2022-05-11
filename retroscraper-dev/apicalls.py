@@ -125,7 +125,7 @@ def getCallHandler(url,apikey,uuid):
                     jsonr = result.json()
                     return result
                 except:
-                    logging.eror ('####### THERE IS AN ERROR WITH TEH BACKEND JSON')
+                    logging.error ('####### THERE IS AN ERROR WITH TEH BACKEND JSON')
             else:
                 if result.status_code == 403:
                     myResponse = requestsResponse()
@@ -138,17 +138,20 @@ def getCallHandler(url,apikey,uuid):
             retries = retries -1
     myResponse = requestsResponse()
     myResponse.status_code=404
-    type(myResponse).text='{"response":{"error":"cannot read from API","url":'+url+'}}'.encode('utf-8')
+    type(myResponse).text='{"response":{"error":"cannot read from API","url":"'+str(url)+'"}}'
     return myResponse
 
-def postCallHandler(url,apikey,uuid,data):
+def postCallHandler(url,apikey,uuid,data,logging):
     header = {"apikey":apikey,"uuid":uuid,"plat":platform.platform(),"User-Agent": "Retroscraper"}
     retries = 10
     while retries > 0:
         try:
             result = requests.post(url, headers=header,data=data)
+            logging.info ('###### SUBMITTED TO BACKEND AND GOT STATUS CODE '+str(result.status_code))
             if result.status_code==200 or result.status_code == 404:
                 return result
+            if result.status_code==405:
+                logging.error ('###### GOT AN ERROR '+str(result.content))
         except:
             retries = retries -1
     myResponse = requestsResponse()
@@ -228,7 +231,7 @@ def getURL(URL, apikey,uuid):
     url = backendURL()+URL
     return getCallHandler(url, apikey,uuid)
 
-def postSubmit (subJson,apikey,uuid):
+def postSubmit (subJson,apikey,uuid,logging):
     url = backendURL()+'/api/submit'
-    return postCallHandler(url,apikey,uuid,subJson)
+    return postCallHandler(url,apikey,uuid,subJson,logging)
 
