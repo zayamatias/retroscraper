@@ -83,7 +83,14 @@ def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid):
                             result = apicalls.getSearch(str(thissys),partname, apikey,uuid)
                             if result.status_code !=404:
                                 try:
-                                    myresults = result.json()['response']['results']
+                                    jsob = result.json()
+                                    print (jsob)
+                                    respobj = jsob['response']
+                                    print (respobj)
+                                    try:
+                                        myresults = respobj['results']
+                                    except:
+                                        continue
                                 except Exception as e:
                                     print ('ERROR IN JSON RECEIVED FROM BACKEND '+str(thissys)+' SEARCHING FOR '+partname)
                                     print (str(result.content))
@@ -116,8 +123,10 @@ def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid):
             submitJson = '{"request": {"type": "nosha","data": {"gameid":"'+gameid+'","systemid": "'+str(system)+'","filename": "'+filename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}'
             subresult = apicalls.postSubmit (submitJson,apikey,uuid)
     except Exception as e:
-        print ('GETTING INFO FROM API: '+str(result.json())+' ERROR '+str(e))
+        print ('GETTING INFO FROM API: '+str(result)+' ERROR '+str(e))
         print (system,filename,sha1,md5,crc)
+        submitJson = '{"request": {"type": "error","data": {"filename": "'+filename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}'
+        subresult = apicalls.postSubmit (submitJson,apikey,uuid)
         response = None
         #sysexit()
     return response
@@ -369,6 +378,10 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     mysha1,mymd5,mycrc = getChecksums(file,config)
     ## PROCESS FILE AND START DOING MAGIC
     result = getInfoFromAPI (system['id'],file,mysha1,mymd5,mycrc,apikey,uuid)
+    if (not result) or ('game' not in result.keys()):
+        ### THERE WAS AN ERROR GETTING INFORMATION FOR THIS FILE
+        logging.error('###### I COULD NOT GET THE GAME INFORMATION FROM API '+str(result))
+        return
     try:
         gsysid = result['game']['system']['id']
     except Exception as e:
@@ -383,20 +396,23 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     logging.info ('###### SIMPLE FILE NAME :['+str(simplefile)+']')
     system['path'] = system['path'].replace('\\','/')
     try:
-        pf =  config['config']['preferbox']
+        pfbx =  config['config']['preferbox']
     except:
-        config['config']['preferbox']= False
-    if not config['config']['preferbox']:
+        pfbx = False
+    if not pfbx:
         logging.info ('###### DOWNLOADING SCREENSHOT')
-        imageURL,destimage = getMediaUrl(system['path']+'images/',simplefile,result['game']['medias'],['mixrbv1','ss','sstitle'],logging,['wor','default'])
+        try:
+            imageURL,destimage = getMediaUrl(system['path']+'images/',simplefile,result['game']['medias'],['mixrbv1','ss','sstitle'],logging,['wor','default'])
+        except Exception as e:
+            logging.error ('##### EFRROR WHEN DOWNLOADING IMAGES ['+str(result)+']]#####=='+str(e))
     else:
         logging.info ('###### DOWNLOADING BOX')
         imageURL,destimage = getMediaUrl(system['path']+'images/',simplefile,result['game']['medias'],['box-2D'],logging,['wor'])
     try:
-        nv =  config['config']['novideodown']
+        novi =  config['config']['novideodown']
     except:
-        config['config']['novideodown']= False
-    if not config['config']['novideodown']:
+        novi = False
+    if not novi:
         logging.info ('###### DOWNLOADING VIDEO')
         videoURL,destvideo = getMediaUrl(system['path']+'videos/',simplefile,result['game']['medias'],['video-normalized'],logging,['wor','default'])
     else:
@@ -620,8 +636,15 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         return
     getmeout = False
     emptyGameTag = "<game><rating>$RATING</rating><lastplayed/><name>$NAME</name><marquee>$MARQUEE</marquee><image>$IMAGE</image><publisher>$PUBLISHER</publisher><releasedate>$RELEASEDATE</releasedate><players>$PLAYERS</players><video>$VIDEO</video><genre>$GENRE</genre><path>$PATH</path><playcount/><developer>$DEVELOPER</developer><thumbnail/><desc>$DESCRIPTION</desc></game>"
+    try:
+        doallsystems = selectedSystems[1]=trans['all'] 
+    except:
+        if not selectedSystems:
+            doallsystems=True
+        else:
+            doallsystems=False
     for system in systems:
-        if (system['name'] not in selectedSystems) and (selectedSystems!=[]) and selectedSystems[1]!=trans['all']:
+        if (system['name'].lower() not in selectedSystems) and (selectedSystems!=[]) and not doallsystems:
             continue
         logging.info ('###### DOING '+str(system))
         if config['config']['MountPath']:

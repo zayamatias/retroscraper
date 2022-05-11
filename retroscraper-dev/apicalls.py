@@ -1,8 +1,7 @@
 import logging
-from requests import get as requestsget
+import requests
 from requests import exceptions as requestsexceptions
 from requests import Response as requestsResponse
-from requests import post as requestspost
 import shutil
 from PIL import Image
 from io import BytesIO
@@ -18,7 +17,7 @@ def backendURL():
 def download_file(url,dest,queue):
  with open(dest, "wb") as f:
     print("Downloading %s" % dest)
-    response = requestsget(url, stream=True)
+    response = requests.get(url, stream=True)
     total_length = response.headers.get('content-length')
     if total_length is None: # no content length header
         f.write(response.content)
@@ -43,7 +42,7 @@ def simpleCall(url):
         retries = 10
         while not success and retries > 1:
             try:
-                req = requestsget(url,headers=headers)
+                req = requests.get(url,headers=headers)
                 success = True
             except requestsexceptions.Timeout:
                 #logging.error ('###### REQUEST TIMED OUT')
@@ -77,7 +76,7 @@ def getImageAPI(url,destfile,apikey,uuid,force=False):
     finalURL = backendURL()+url
     while retries > 0:
         try:
-            r = requestsget(finalURL, stream=True, headers=myHeader)
+            r = requests.get(finalURL, stream=True, headers=myHeader)
             if r.status_code == 200:
                 with open(destfile, 'wb') as f:
                     r.raw.decode_content = True
@@ -92,7 +91,7 @@ def getImageAPI(url,destfile,apikey,uuid,force=False):
                     return True
             else:
                 if ('.png' in url) and r.status_code==404:
-                    r = requestsget(backendURL()+'/api/medias/0/noimage.png', stream=True, headers=myHeader)
+                    r = requests.get(backendURL()+'/api/medias/0/noimage.png', stream=True, headers=myHeader)
                     if r.status_code == 200:
                         with open(destfile, 'wb') as f:
                             r.raw.decode_content = True
@@ -120,9 +119,13 @@ def getCallHandler(url,apikey,uuid):
     header = {"apikey":apikey,"uuid":uuid,"plat":platform.platform(),"User-Agent": "Retroscraper"}
     while retries > 0:
         try:
-            result = requestsget(url, headers=header)
+            result = requests.get(url, headers=header)
             if result.status_code==200 or result.status_code == 404:
-                return result
+                try:
+                    jsonr = result.json()
+                    return result
+                except:
+                    logging.eror ('####### THERE IS AN ERROR WITH TEH BACKEND JSON')
             else:
                 if result.status_code == 403:
                     myResponse = requestsResponse()
@@ -135,7 +138,7 @@ def getCallHandler(url,apikey,uuid):
             retries = retries -1
     myResponse = requestsResponse()
     myResponse.status_code=404
-    type(myResponse).text='{"response":{"error":"cannot read from API"}}'.encode('utf-8')
+    type(myResponse).text='{"response":{"error":"cannot read from API","url":'+url+'}}'.encode('utf-8')
     return myResponse
 
 def postCallHandler(url,apikey,uuid,data):
@@ -143,7 +146,7 @@ def postCallHandler(url,apikey,uuid,data):
     retries = 10
     while retries > 0:
         try:
-            result = requestspost(url, headers=header,data=data)
+            result = requests.post(url, headers=header,data=data)
             if result.status_code==200 or result.status_code == 404:
                 return result
         except:
@@ -202,18 +205,22 @@ def getGame(gameid,apikey,uuid):
         return result.json()['response']
 
 def getSHA1(sha1,apikey,uuid):
+    logging.info ('###### GETTING BY SHA1')
     url = backendURL()+'/api/sha1/'+sha1
     return getCallHandler(url, apikey,uuid)
 
 def getCRC(crc,apikey,uuid):
+    logging.info ('###### GETTING BY CRC')
     url = backendURL()+'/api/crc/'+crc
     return getCallHandler(url, apikey,uuid)
 
 def getMD5(md5,apikey,uuid):
+    logging.info ('###### GETTING BY MD5')
     url = backendURL()+'/api/md5/'+md5
     return getCallHandler(url, apikey,uuid)
 
 def getSearch(thissys,partname, apikey,uuid):
+    logging.info ('###### GETTING BY SEARCH '+str(partname))
     url = backendURL()+'/api/search/'+thissys+'/'+partname
     return getCallHandler(url, apikey,uuid)
 

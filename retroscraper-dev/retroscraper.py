@@ -696,7 +696,11 @@ if __name__ == '__main__':
     parser.add_argument('--sysbezels', help='Download system bezel if game bezel is not found',action='store_true')
     parser.add_argument('--cleanmedia', help='Clean media directroies before downloading',action='store_true')
     parser.add_argument('--linkmedia', help='Creat media links to save space (only in Linux/RPI)',action='store_true')
-    argsvals = vars(parser.parse_args())
+    parser.add_argument('--systems', help='List of systems to scan (comma separated values)',nargs=1)
+    try:
+        argsvals = vars(parser.parse_args())
+    except Exception as e:
+        print ('Command error '+str(e))
     print ('Loading RetroScraper config File')
     logging.info ('###### LOADING RETROSCRAPER CONFIG')
     q=Queue()
@@ -746,6 +750,11 @@ if __name__ == '__main__':
         config['config']['language']= argsvals['language'][0].lower()
     except:
         config['config']['language']= 'en'
+
+    try:
+        systemstoscan = argsvals['systems'][0].lower().split(',')
+    except:
+        systemstoscan = []
     try:
         config['config']['SystemsFile']= argsvals['systemsfile'][0]
     except:
@@ -812,7 +821,12 @@ if __name__ == '__main__':
         print ('Loading systems from Backend')
         logging.info ('###### LOADING SYSTEMS FROM BACKEND')
         remoteSystems = apicalls.getSystemsFromAPI(apikey,uuid)
+        ## SYSTEM SELECTION TOGGLER
         systems = scrapfunctions.loadSystems(config,apikey,uuid,remoteSystems,q,trans,logging)
+        if not systemstoscan:
+            print ('Scanning All Systems')
+        else:
+            print ('Scanning Systems '+str(systemstoscan))
         print ('Loading companies from backend')
         logging.info ('###### LOADING COMPANIES FROM BACKEND')
         companies = scrapfunctions.loadCompanies(apikey,uuid)
@@ -833,7 +847,7 @@ if __name__ == '__main__':
             except Exception as e:
                 print ('ERROR '+str(e))
         logging.info ('STARTING THREADS')
-        thread = Thread(target= scrapfunctions.scanSystems,args=(q,systems,apikey,uuid,companies,config,logging,remoteSystems,[],scanqueue,rompath,trans))
+        thread = Thread(target= scrapfunctions.scanSystems,args=(q,systems,apikey,uuid,companies,config,logging,remoteSystems,systemstoscan,scanqueue,rompath,trans))
         thread.start()
         system =''
         game=''
