@@ -129,5 +129,8 @@ Retroscraper creates a local retroscraper.db file, where it will store all the c
 
 Since latest version, RetroScraper will autoamtically generate a backup of your gamelist.xml file for each system, by adding a number to it (gamelist.xml.1, gamelist.xml.2 and so forth). If you want to avoid having these backups created, use the _ _--nobackup_ _ modifier.
 
+#### CLI Specific flags:
+
+--systems : provide a list of systems you will like to have scanned, separated by ','. The names are the same as the ones found in your es_systems.cfg file, under the _<system><name>SYSTEMNAME</name></system>_ tag.
 
 
