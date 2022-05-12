@@ -48,9 +48,9 @@ def getArcadeName(name):
     #logging.info ('###### FOUND GAME IN ARCADEITALIA '+gamename)
     return gamename
 
-def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid,logging):
-    filename = filename.replace ('\\','/')
-    filename = filename[filename.rindex('/')+1:]
+def getInfoFromAPI(system,thisfilename,sha1,md5,crc,apikey,uuid,logging):
+    partfilename = thisfilename.replace ('\\','/')
+    filename = partfilename[partfilename.rindex('/')+1:]
     result = apicalls.getSHA1(sha1, apikey,uuid)
     nosha = False
     if result.status_code == 404:
@@ -92,7 +92,7 @@ def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid,logging):
                             if result.status_code !=404:
                                 logging.info ('###### FOUND IN THE BACKEND')
                                 try:
-                                    jsob = result.json()
+                                    jsob = jsonloads(result.text)
                                     #print (jsob)
                                     respobj = jsob['response']
                                     #print (respobj)
@@ -111,12 +111,12 @@ def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid,logging):
                                     if sfname.lower() == searchable['name']['text'].lower():
                                         logging.info ('###### THERE IS A MATCH')
                                         result = apicalls.getURL(searchable['gameURL'], apikey,uuid)
-                                        submitJson = '{"request": {"type": "romnotincluded","data": {"gameUrl":"'+searchable['gameURL']+'","systemid": "'+str(system)+'","filename": "'+filename+'","match":"'+fname+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
+                                        submitJson = '{"request": {"type": "romnotincluded","data": {"gameUrl":"'+searchable['gameURL']+'","systemid": "'+str(system)+'","filename": "'+filename.encode().decode("utf-8")+'","match":"'+fname+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
                                         subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging)
-                                        return result.json()['response']
+                                        return jsonloads(result.text)['response']
                                 logging.info ('###### THERE IS NO MATCH SO FAR')
                 logging.info ('###### I GIVE UP LOOKING, WILL INFORM THE BACKEND')
-                submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "'+filename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
+                submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "'+filename.encode().decode("utf-8")+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
                 logging.info ('###### GOING TO SUBMIT TO BACKEND')
                 result = apicalls.postSubmit (submitJson,apikey,uuid,logging)
                 logging.info ('###### SUBMITTED TO BACKEND')
@@ -132,7 +132,9 @@ def getInfoFromAPI(system,filename,sha1,md5,crc,apikey,uuid,logging):
             nosha=True
     try:
         logging.info ('###### I FOUND THE GAME')
-        response = result.json()['response']
+        rjson = jsonloads(result.text)
+        logging.info ('###### GOT JSON '+str(rjson))
+        response = rjson['response']
         if nosha:
             logging.info ('###### I FOUND NO SHA1 BUT I KNOW WHICH GAME IT IS, TELLING THE BACKEND')
             try:
@@ -399,14 +401,21 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     file=str(file)
     if ospath.isdir(file):
         logging.info ('###### THIS IS A DIRECTORY!')
+        ### THIS INFORMS THE THREAD HAS ENDED
         tq.put(thn)
         return
-    mysha1,mymd5,mycrc = getChecksums(file,config)
+    logging.info ('####### GETTING CHECKSUMS FOR '+str(file))
+    mysha1,mymd5,mycrc = getChecksums(file,config,logging)
+    logging.info ('####### GOT CHECKSUMS FOR '+str(file))
     ## PROCESS FILE AND START DOING MAGIC
+    logging.info ('####### GETTING INFO FOR '+str(file))
     result = getInfoFromAPI (system['id'],file,mysha1,mymd5,mycrc,apikey,uuid,logging)
+    logging.info ('####### GOT INFO FOR '+str(file))
     if (not result) or ('game' not in result.keys()):
         ### THERE WAS AN ERROR GETTING INFORMATION FOR THIS FILE
         logging.error('###### I COULD NOT GET THE GAME INFORMATION FROM API '+str(result))
+        ### THIS INFORMS THE THREAD HAS ENDED
+        tq.put(thn)
         return
     try:
         gsysid = result['game']['system']['id']
@@ -778,7 +787,8 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                         sq.put ('')
                         currFileIdx = currFileIdx+1
                     else:
-                        for thrn in range (0,5):
+                        ### RANGE OF THREADS
+                        for thrn in range (0,6):
                             logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
                             if thread_list[thrn]==None:
                                 currFileIdx = currFileIdx+1

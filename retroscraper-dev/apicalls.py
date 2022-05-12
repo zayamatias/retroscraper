@@ -9,10 +9,13 @@ import platform
 from pathlib import Path
 import os
 import sys
+import json
+from http.client import HTTPConnection
+from requests.models import Response as reqResponse
 
 def backendURL():
-    #return "http://192.168.8.160/"
-    return "http://77.68.23.83/"
+    #return "http://192.168.8.160"
+    return "http://77.68.23.83"
 
 def download_file(url,dest,queue):
  with open(dest, "wb") as f:
@@ -114,49 +117,81 @@ def getImageAPI(url,destfile,apikey,uuid,force=False):
 
 
 def getCallHandler(url,apikey,uuid):
-    retries = 50
-    success = False
+    if 'SHACAUSINGISSUES' in url:
+        debug = True
+        logging.info ('###### WERE IN THE CASE')
+        HTTPConnection.debuglevel = 1
+        logging.basicConfig()
+        logging.getLogger().setLevel(logging.DEBUG)
+        requests_log = logging.getLogger("requests.packages.urllib3")
+        requests_log.setLevel(logging.DEBUG)
+        requests_log.propagate = True    
+    else:
+        debug = False
+    logging.info ('###### IN GET CALL HANDLER '+str(url))
+    retries = 10
     header = {"apikey":apikey,"uuid":uuid,"plat":platform.platform(),"User-Agent": "Retroscraper"}
     while retries > 0:
         try:
             result = requests.get(url, headers=header)
             if result.status_code==200 or result.status_code == 404:
                 try:
-                    jsonr = result.json()
+                    if debug:
+                        logging.warning ('####### RESULT IS ')
+                        logging.warning (str(result.text))
+                    jsonr = json.loads(result.text)
                     return result
-                except:
-                    logging.error ('####### THERE IS AN ERROR WITH TEH BACKEND JSON')
+                except Exception as e:
+                    logging.error ('####### THERE IS AN ERROR WITH THE BACKEND JSON '+str(e))
+                    logging.error ('####### '+str(url))
+                    logging.error ('####### '+str(result.text))
+                    logging.error ('####### RETRIES LEFT '+str(retries))
+                    logging.error ('####### REQUEST METHOD '+str(result.request.method))
+                    logging.error ('####### REQUEST HISTORY '+str(result.history[0].request.method))
+                    retries = retries -1
             else:
                 if result.status_code == 403:
                     myResponse = requestsResponse()
                     myResponse.status_code=403
-                    type(myResponse).text='{"response":{"error":"Not authorized to use API"}}'.encode('utf-8')
+                    type(myResponse).text='{"response":{"error":"Not authorized to use API"}}'
                     return myResponse
                 else:
                     logging.info ('###### GOT RESULT '+str(result.status_code)+' FROM SERVER')
         except:
             retries = retries -1
+    
+    
+    
     myResponse = requestsResponse()
     myResponse.status_code=404
-    type(myResponse).text='{"response":{"error":"cannot read from API","url":"'+str(url)+'"}}'
+    mytext = '{"response":{"error":"cannot read from API","url":"'
+    mytext = mytext + str(url)
+    mytext = mytext + '"}}'
+    logging.info ('######+++++++ '+str(mytext))
+    type(myResponse).text=mytext
     return myResponse
 
 def postCallHandler(url,apikey,uuid,data,logging):
+    logging.info ('###### IN POST CALL HANDLER '+str(url))
     header = {"apikey":apikey,"uuid":uuid,"plat":platform.platform(),"User-Agent": "Retroscraper"}
     retries = 10
     while retries > 0:
         try:
+            data = data.encode(encoding='utf-8')
             result = requests.post(url, headers=header,data=data)
             logging.info ('###### SUBMITTED TO BACKEND AND GOT STATUS CODE '+str(result.status_code))
             if result.status_code==200 or result.status_code == 404:
                 return result
             if result.status_code==405:
                 logging.error ('###### GOT AN ERROR '+str(result.content))
-        except:
+                retries = retries -1
+        except Exception as e:
+            logging.error('####### POST REQUEST ERRORED '+str(e))
             retries = retries -1
+    myResponse = None
     myResponse = requestsResponse()
     myResponse.status_code=404
-    type(myResponse).text='{"response":{"error":"cannot send to API"}'.encode('utf-8')
+    type(myResponse).text='{"response":{"error":"cannot send to API"}'
     return myResponse
 
 def getVersion(apikey,uuid):
