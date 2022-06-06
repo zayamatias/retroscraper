@@ -1,3 +1,4 @@
+from dataclasses import replace
 import logging
 from re import findall,sub,search
 from xml.sax.saxutils import escape
@@ -395,7 +396,10 @@ def getMediaUrl(mediapath,file,medias,mediaList,logging,regionList=['wor']):
     return imageURL,destfile
 
 
-def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,thn):
+def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,thn,xmlvalues):
+    ### SHOULD ADD THE CHECK COFIG BIT
+    for xvalue in xmlvalues:
+        emptyGameTag=emptyGameTag.replace(xvalue[0],xvalue[1])
     logging.info ('###### STARTING FILE '+file)
     file=file.replace('\\','/')
     file=str(file)
@@ -623,6 +627,49 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     logging.info ('###### DONE FILE '+file)
     return
 
+def getGamelistData(gamelistfile):
+    try:
+        tree = ET.parse(gamelistfile)
+    except:
+        return []
+    gamelist = tree.getroot()
+    currValues = dict()
+    for game in gamelist:
+        myValues = []
+        pc = False
+        favo = False
+        lastplay = False
+        for gametag in game:
+            if gametag.tag.lower()=='playcount':
+                if gametag.text:
+                    myValues.append(("$PLAYCOUNT",gametag.text))
+                    pc = True
+            if gametag.tag.lower()=='favorite':
+                if gametag.text:
+                    myValues.append(("$FAVO","<favorite>true</favorite>"))
+                    favo = True
+            if gametag.tag.lower()=='lastplayed':
+                if gametag.text:
+                    myValues.append(("$LASTPLAY",gametag.text))
+                    lastplay = True
+            if gametag.tag.lower()=='path':
+                tmppath = gametag.text
+                if '/' in tmppath:
+                    gcpath = tmppath[tmppath.rindex('/')+1:]
+                if '\\' in tmppath:
+                    gcpath = tmppath[tmppath.rindex('\\')+1:]
+                if '/' not in tmppath and '\\' not in tempath:
+                    gcpath = tmppath
+        if not favo :
+            myValues.append(("$FAVO",""))
+        if not pc :
+            myValues.append(("$PLAYCOUNT","0"))
+        if not lastplay :
+            myValues.append(("$LASTPLAY",""))
+        if myValues:
+            currValues[gcpath]=myValues
+    return currValues
+
 def findMissingGames(systemid,havelist,apikey,uuid,systems,queue,doDownload):
     allgames = apicalls.getAllGames(systemid,apikey,uuid)
     missfile ='missing.txt'
@@ -670,7 +717,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         print ('COULD NOT FIND ANY SYSTEMS - EXITING')
         return
     getmeout = False
-    emptyGameTag = "<game><rating>$RATING</rating><lastplayed/><name>$NAME</name><marquee>$MARQUEE</marquee><image>$IMAGE</image><publisher>$PUBLISHER</publisher><releasedate>$RELEASEDATE</releasedate><players>$PLAYERS</players><video>$VIDEO</video><genre>$GENRE</genre><path>$PATH</path><playcount/><developer>$DEVELOPER</developer><thumbnail/><desc>$DESCRIPTION</desc></game>"
+    emptyGameTag = "<game><rating>$RATING</rating><name>$NAME</name><marquee>$MARQUEE</marquee><image>$IMAGE</image><publisher>$PUBLISHER</publisher><releasedate>$RELEASEDATE</releasedate><players>$PLAYERS</players><video>$VIDEO</video><genre>$GENRE</genre><path>$PATH</path><developer>$DEVELOPER</developer><thumbnail/><desc>$DESCRIPTION</desc>$FAVO<playcount>$PLAYCOUNT</playcount><lastplayed>$LASTPLAY</lastplayed></game>"
     logging.info ('###### DO ALL SYSTEMS?')
     try:
         doallsystems = (selectedSystems[1]==trans['all'])
@@ -693,6 +740,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             q.put(['errorlabel','text',errormsg])
             continue
         outXMLFile = system['path']+'gamelist.xml'
+        currglvalues = getGamelistData(outXMLFile)
         tmpxmlFile = hpath+'gamelist.xml'
         writeFile = open(tmpxmlFile,'w',encoding="utf-8")
         writeFile.write("<?xml version='1.0' encoding='utf-8'?><gameList>")
@@ -773,12 +821,23 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                 donesystem = True
             else:
                 file = str(romfiles[currFileIdx])
+                if '/' in file:
+                    filename = file[file.rindex('/')+1:]
+                if '\\' in file:
+                    filename = file[file.rindex('\\')+1:]
+                if '\\' not in file and '/' not in file:
+                    filename = file
                 if '.' in file:
                     filext = file[file.rindex('.'):]
                 else:
                     filext=''
+                if filename in currglvalues:
+                    oldValues = currglvalues[filename]
+                else:
+                    ### This file was not in the CURRENT XML
+                    oldValues=[('$LASTPLAY','0'),('$FAVO',''),('$PLAYCOUNT','0')]
                 if not queuefull:
-                    if (not filext in system['extension']) and not ('gaemlist.xml' in file.lower()):
+                    if (not filext in system['extension']) or ('gamelist.xml' in file.lower()):
                         try:
                             logging.info ('###### This file ['+file+'] is not in the list of accepted extensions')
                         except:
@@ -793,7 +852,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                             if thread_list[thrn]==None:
                                 currFileIdx = currFileIdx+1
                                 logging.info ('###### STARTING FILE '+file+' IN THREAD '+str(thrn))
-                                thread = Thread(target=getFileInfo,args=(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,thrn))
+                                thread = Thread(target=getFileInfo,args=(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,thrn,oldValues))
                                 thread_list[thrn]=thread
                                 logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
                                 thread.start()

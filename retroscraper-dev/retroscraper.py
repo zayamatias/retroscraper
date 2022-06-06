@@ -40,6 +40,7 @@ from kivy_garden import filebrowser
 import kivy.uix.splitter
 import kivy.uix.stacklayout
 import platform
+from kivy.metrics import dp
 
 if platform.system().lower().startswith('win'):
     import win32timezone
@@ -51,8 +52,8 @@ try:
 except:
     pass
 
-globalapikey=''
-version = '0.4'
+globalapikey='45497D1CF40B6E442CABA2B5C5CF8017D8CB72E7'
+version = '0.5'
 trans = dict()
 cli = False
 
@@ -98,6 +99,10 @@ class MainScreen(BoxLayout):
                             size_hint=(0.9, 0.9))
         self._popup.open()
 
+    def update_map(self):
+        content = self.ids['maptopath'].text
+        self.config['config']['MountPath']=content
+        scrapfunctions.saveConfig(self.config,self.q)
 
     def show_load(self):
         content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
@@ -276,6 +281,31 @@ class MainScreen(BoxLayout):
         #self.ids['selectbutton'].text=trans['select']
         #self.ids['okpopupbutton'].text=trans['okpopup']
 
+    def insSysChoice(self,bindaction,lbltext,state):
+        box = BoxLayout()
+        box.valign='center'
+        lbl = Label()
+        lbl.text=lbltext
+        lbl.size_hint=(6,6)
+        lbl.font_name="sonic.ttf"
+        if len(lbltext)>15:
+            ft = '9dp'
+        if len(lbltext)>12:
+            ft = '10dp'
+        else:
+            ft = '12dp'
+        lbl.font_size=ft
+        lbl.outline_color=(0,0,0)
+        lbl.outline_width=1
+        lbl.padding_y=4
+        box.size = (len(lbltext)*11,10)
+        lbl.bind(size=lbl.setter('text_size'))
+        chkbox = CheckBox(active=state)
+        chkbox.bind(on_press=bindaction)
+        box.add_widget(chkbox)
+        box.add_widget(lbl)
+        return box
+
     def initializeConfig(self):
         global trans
         logging.info ('###### LOADING CONFIG')
@@ -336,58 +366,22 @@ class MainScreen(BoxLayout):
             totsystems = len(self.systems)
             if totsystems>5:
                 totsystems=totsystems+1
-            scols = 7
-            srows = ceil(totsystems/scols)
             newbox= self.ids['systemschoice'] #.add_widget(newbox)
-            newbox.clear_widgets()            
-            newbox.size=(0,srows*20)
-            newbox.orientation='lr-tb'
-            newbox.cols=scols
-            newbox.rows=srows
-            newbox.size_hint=(1,None)
             try:
                 if totsystems>5:
-                    box= BoxLayout()
-                    box.orientation='horizontal'
-                    box.cols=2
-                    box.rows=1
-                    box.size_hint=(None,None)
-                    box.size=(170,20)
-                    lbl= Label() 
-                    lbl.font_size=10
-                    lbl.outline_color=(0,0,0)
-                    lbl.outline_width=1
-                    lbl.font_name='sonic.ttf'
-                    lbl.text=trans['all']
-                    lbl.text_size=(145,20)
-                    lbl.valign='center'
-                    chkbox = CheckBox(size_hint_x=0.2,active=True,color=(1,1,1))
-                    chkbox.bind(on_press=self.selectAll)
-                    box.add_widget(chkbox)
-                    box.add_widget(lbl)
+                    box = self.insSysChoice(self.selectAll,trans['all'],True)
                     newbox.add_widget(box)
+                    box.size= box.parent.size  # important!
+                    box.pos= box.parent.pos  # important!
 
                 for syst in self.systems:                
-                    box= BoxLayout()
-                    box.orientation='horizontal'
-                    box.cols=2
-                    box.rows=1
-                    box.size_hint=(None,None)
-                    box.size=(170,20)
-                    lbl= Label()
-                    lbl.font_size=10
-                    lbl.outline_color=(0,0,0)
-                    lbl.outline_width=1
-                    lbl.font_name='sonic.ttf'
-                    lbl.text_size=(145,20)
-                    lbl.valign='center'
-                    lbl.text=syst['name']
-                    chkbox = CheckBox()
-                    chkbox.size_hint_x=0.2
-                    chkbox.bind(on_press=self.deselectAll)
-                    box.add_widget(chkbox)
-                    box.add_widget(lbl)
+                    box = self.insSysChoice(self.deselectAll,syst['name'],False)
                     newbox.add_widget(box)
+                    box.size= box.parent.size  # important!
+                    box.pos= box.parent.pos  # important!
+
+                self.ids['systemschoice'].size= newbox.size
+
             except Exception as e:
                 logging.error ('###### NO SYSTEMS CHOICE LAYOUT PRESENT '+str(e))
             self.companies = scrapfunctions.loadCompanies(self.apikey,self.uuid)
@@ -489,6 +483,12 @@ class MainScreen(BoxLayout):
                 logging.info('###### '+str(e))
                 self.config['config']['dobackup'] = True
                 self.ids['dobackup'].active = self.config['config']['dobackup']
+            try:
+                self.ids['keepdata'].active = self.config['config']['keepdata']
+            except Exception as e:
+                logging.info('###### '+str(e))
+                self.config['config']['keepdata'] = True
+                self.ids['keepdata'].active = self.config['config']['keepdata']
             self.initLabels()
             return True
 
@@ -500,6 +500,11 @@ class MainScreen(BoxLayout):
 
     def toggleDoBackup(self,btn=None):
         self.config['config']['dobackup']=self.ids['dobackup'].active
+        scrapfunctions.saveConfig(self.config,self.q)
+        return 
+
+    def toggleKeepData(self,btn=None):
+        self.config['config']['keepdata']=self.ids['keepdata'].active
         scrapfunctions.saveConfig(self.config,self.q)
         return 
 
@@ -786,7 +791,10 @@ if __name__ == '__main__':
         Config.write()
         retroscraperApp().run()    
     else:
-        Window.close()
+        try:
+            Window.close()
+        except:
+            pass
         try:
             retroscraperApp().stop()
         except:
