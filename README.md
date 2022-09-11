@@ -19,8 +19,6 @@ It will create a backup of the gamelist.xml files by default, use the --nobackup
 
 Excute as 'python retroscraper.py'.
 
-**In order to run from source you will need an API key, pls request one at retroscraper[at]gmail.com**
-
 ### From precompiled binaries:
 
 Simply download the pre-compiled binaries for your system from the [releases page](https://github.com/zayamatias/retroscraper/releases). Currently windows, rpi and linux_x64 exist. For linux version you need to do 'chmod +rwx retroscraper.linux' and for rpi 'chmod +rwx retroscraper.rpi' to be able to execute it.
