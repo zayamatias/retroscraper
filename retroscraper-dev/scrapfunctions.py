@@ -1,6 +1,7 @@
 from dataclasses import replace
 import logging
 from re import findall,sub,search
+import uuid
 from xml.sax.saxutils import escape
 from sys import exit as sysexit
 from numpy import save
@@ -18,8 +19,49 @@ from threading import Thread
 from time import sleep
 from googletrans import Translator
 from pathlib import Path as Path
+import remote
+import os
 
-def getArcadeName(name):
+def pathExists(path,logging,thn):
+    if remote.testPathIsRemote(path,logging,thn):
+        if 'ssh://' in path:
+            ip,spath = remote.getFileBits(path,'ssh://',thn)
+        if 'smb://' in path:
+            ip,spath = remote.getFileBits(path,'smb://',thn)
+        return remote.remotePathExists(path,ip,logging,thn)
+    else:
+        return ospath.isdir(path)
+    
+
+def normalizeFileName(fname):
+    if 'ssh://' in fname.lower():
+        rname = fname.replace('ssh://','')
+        return escape(rname[rname.index('/'):])
+    if 'smb://' in fname.lower():
+        rname = fname.replace('smb://','')
+        return escape(rname[rname.index('/'):])
+    return escape (fname)
+
+
+def makedir (path,logging,thn):
+    if remote.testPathIsRemote(path,logging,thn):
+        logging.info('###### GOING TO CREATE REMOTE DIR '+path+' IN THREAD ['+str(thn)+']')
+        remote.makeRemoteDir(path,thn,logging)
+        logging.info('###### CREATED REMOTE DIR '+path+' IN THREAD ['+str(thn)+']')
+    else:
+        logging.info('###### GOING TO CREATE LOCAL DIR '+path+' IN THREAD ['+str(thn)+']')
+        makedirs(path)    
+        logging.info('###### CREATED LOCAL DIR '+path+' IN THREAD ['+str(thn)+']')
+    return
+
+def testPath(mypath,logging,thn):
+    if remote.testPathIsRemote(mypath,logging,thn):
+        return True
+    if mypath =='' or not ospath.isdir(mypath):
+        return False
+    return True
+
+def getArcadeName(name,thn):
     if '.' in name:
         name=name[:name.rindex('.')]
     callURL = 'http://www.mamedb.com/game/'+name+'.html'
@@ -29,16 +71,13 @@ def getArcadeName(name):
     response = apicalls.simpleCall(callURL)
     if response!= '':
         gamename = findall("<title>(.*?)<\/title>", response)[0].replace('Game Details:  ','').replace(' - mamedb.com','')
+        logging.info ('###### FOUND GAME IN MAMEDB '+gamename+' THREAD['+str(thn)+']')
         return gamename
-    #print('###### COULD NOT GET ARCADE NAME FROM MAMEDB')
-    #print('RESOPONSE='+str(response)+']')
-    #logging.debug('###### TRYING WITH BLU FERRET IN URL '+callURL2)
     response = apicalls.simpleCall(callURL2)
     if response !='':
         gamename = findall("\<title\>Game Details:  (\w*).*\<\/title\>", response[0])
+        logging.info ('###### FOUND GAME IN MAMEDB BLU FERRET '+gamename+' THREAD['+str(thn)+']')
         return gamename
-    #print ('###### COULD NOT GET NAME FROM BLU FERRET')
-    #logging.debug('###### TRYING WITH ARCADE ITALIA IN URL '+callURL3)
     response = apicalls.simpleCall(callURL3)
     if response != '':
         gamename = findall("<title>(.*?)<\/title>", response)[0].replace(' - MAME machine','').replace(' - MAME software','')
@@ -46,113 +85,121 @@ def getArcadeName(name):
     if gamename.upper()=='ARCADE DATABASE':
         #print('###### COULD NOT GET NAME FROM ARCADE ITALIA')
         gamename = ''
-    #logging.info ('###### FOUND GAME IN ARCADEITALIA '+gamename)
+    logging.info ('###### FOUND GAME IN ARCADEITALIA '+gamename+' THREAD['+str(thn)+']')
     return gamename
 
-def getInfoFromAPI(system,thisfilename,sha1,md5,crc,apikey,uuid,logging):
+def getInfoFromAPI(system,thisfilename,sha1,md5,crc,apikey,uuid,logging,thn):
     partfilename = thisfilename.replace ('\\','/')
     filename = partfilename[partfilename.rindex('/')+1:]
-    result = apicalls.getSHA1(sha1, apikey,uuid)
+    result = apicalls.getSHA1(sha1, apikey,uuid,thn)
     nosha = False
+    try:
+        showfilename = filename.encode().decode('utf-8')
+    except:
+        showfilename = ''
     if result.status_code == 404:
-        logging.info ('###### COULD NOT FIND SHA1 FOR FILE '+filename)
+        logging.info ('###### COULD NOT FIND SHA1 FOR FILE '+showfilename+' THREAD['+str(thn)+']')
         nosha = True
-        result = apicalls.getCRC(crc, apikey,uuid)
+        result = apicalls.getCRC(crc, apikey,uuid,thn)
         if result.status_code == 404:
-            logging.info ('###### COULD NOT FIND CRC FOR FILE '+filename)
-            result = apicalls.getMD5(md5, apikey,uuid)
+            logging.info ('###### COULD NOT FIND CRC FOR FILE '+showfilename+' THREAD['+str(thn)+']')
+            result = apicalls.getMD5(md5, apikey,uuid,thn)
             if result.status_code == 404:
-                logging.info ('###### COULD NOT FIND MD5 FOR FILE '+filename)
+                logging.info ('###### COULD NOT FIND MD5 FOR FILE '+showfilename+' THREAD['+str(thn)+']')
                 ### remove both lines below
                 fname = filename[:filename.rindex('.')]
                 if 75 in system:
-                    logging.info ('###### ITS AN ARCADE GAMEE '+filename)
+                    logging.info ('###### ITS AN ARCADE GAMEE '+showfilename+' THREAD['+str(thn)+']')
                     #print ('going for arcadename')
-                    arcadeName = getArcadeName(filename)
+                    arcadeName = getArcadeName(filename,thn)
                     #print (arcadeName)
                     if arcadeName == '' or not arcadeName:
                         arcadeName = fname
                     try:
                         partnames = sub('[^A-Za-z0-9]+',' ',arcadeName).lower().split()
                     except Exception as e:
-                        print ('###### ERROR WHEN GETTING ARCADE NAME '+str(arcadeName)+' ->'+str(e)+' in file '+str(fname))
+                        print ('###### ERROR WHEN GETTING ARCADE NAME '+str(arcadeName)+' ->'+str(e)+' in file '+str(showfilename)+' THREAD['+str(thn)+']')
                         sysexit()
 
                 else:
-                    logging.info ('###### ITS NOT AN ARCADE GAMEE '+filename)
+                    logging.info ('###### ITS NOT AN ARCADE GAMEE '+showfilename+' THREAD['+str(thn)+']')
                     partnames =  sub('[^A-Za-z0-9]+',' ',fname).lower().split()
                 exclude_words = ['trsi','bill','sinclair','part','tape','gilbert','speedlock','erbesoftwares','aka','erbe','iso','psn','soft','crack','dsk','release','z80','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','prototype','pirate','world','fre','h3c','jue','edition','c128','unl','1983','1984','ltd','side','1985','1986','1987','software','disabled','atx','bamcopy','playable','data','boot','xenophobia','code','dump','compilation','cd1','cd2','cd3','cd4','paradox','19xx','1988','1989','1990','1991','1992','1993','1994','1995','1996','manual','csl','defjam','files','pdx','doscopy','bootable','cracktro','flashtro','flt','checksum','error','qtx','aga','corrupt','disk1','disk2','disk3','disk4','disk5','disk6','italy','spain','psx','disc','demo','rev','slus','replicants','germany','france','start','tsth','patch','newgame','sega','beta','hack','rus','h1c','h2c','the','notgame','zzz','and','pal','ntsc','disk','file','inc','fullgame','48k','128k','16k','tap','tzx','usa','japan','europe','d64','t64','c64']
                 sfname = sub("[\(\[].*?[\)\]]", "", fname)
                 sfname = sfname.replace('_',' ').strip()
                 for thissys in system:
-                    logging.info ('###### LOOKING IN SYSTEM '+str(thissys))
+                    logging.info ('###### LOOKING IN SYSTEM '+str(thissys)+' THREAD['+str(thn)+']')
                     for partname in partnames:
-                        logging.info ('###### LOOKING FOR SYSTEM '+str(partname))
+                        logging.info ('###### LOOKING FOR SYSTEM '+str(partname)+' THREAD['+str(thn)+']')
                         if len(partname)>3 and not (partname.lower() in exclude_words) :
-                            result = apicalls.getSearch(str(thissys),partname, apikey,uuid)
+                            result = apicalls.getSearch(str(thissys),partname, apikey,uuid,thn)
                             if result.status_code !=404:
-                                logging.info ('###### FOUND IN THE BACKEND')
+                                logging.info ('###### FOUND IN THE BACKEND THREAD['+str(thn)+']')
                                 try:
                                     jsob = jsonloads(result.text)
                                     #print (jsob)
                                     respobj = jsob['response']
                                     #print (respobj)
-                                    logging.info ('###### IT S A GOOD JSON')
+                                    logging.info ('###### IT S A GOOD JSON THREAD['+str(thn)+']')
                                     try:
                                         myresults = respobj['results']
-                                        logging.info ('###### THERE ARE RESULTS')
+                                        logging.info ('###### THERE ARE RESULTS THREAD['+str(thn)+']')
                                     except:
-                                        logging.error ('###### I GOT SOMETHING STRANGE,, NO RESULTS FOR A SEARCH!')
+                                        logging.error ('###### I GOT SOMETHING STRANGE,, NO RESULTS FOR A SEARCH! THREAD['+str(thn)+']')
                                         continue
                                 except Exception as e:
-                                    logging.error ('ERROR IN JSON RECEIVED FROM BACKEND '+str(thissys)+' SEARCHING FOR '+partname+' '+str(e))
+                                    logging.error ('ERROR IN JSON RECEIVED FROM BACKEND '+str(thissys)+' SEARCHING FOR '+partname+' '+str(e)+' THREAD['+str(thn)+']')
                                     continue
                                 for searchable in myresults:
-                                    logging.info ('###### LOOKING FOR MATCHES')
+                                    logging.info ('###### LOOKING FOR MATCHES THREAD['+str(thn)+']')
                                     if sfname.lower() == searchable['name']['text'].lower():
-                                        logging.info ('###### THERE IS A MATCH')
-                                        result = apicalls.getURL(searchable['gameURL'], apikey,uuid)
+                                        logging.info ('###### THERE IS A MATCH THREAD['+str(thn)+']')
+                                        result = apicalls.getURL(searchable['gameURL'], apikey,uuid,thn)
                                         submitJson = '{"request": {"type": "romnotincluded","data": {"gameUrl":"'+searchable['gameURL']+'","systemid": "'+str(system)+'","filename": "'+filename.encode().decode("utf-8")+'","match":"'+fname+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
-                                        subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging)
+                                        subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging,thn)
                                         return jsonloads(result.text)['response']
-                                logging.info ('###### THERE IS NO MATCH SO FAR')
-                logging.info ('###### I GIVE UP LOOKING, WILL INFORM THE BACKEND')
-                submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "'+filename.encode().decode("utf-8")+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
-                logging.info ('###### GOING TO SUBMIT TO BACKEND')
-                result = apicalls.postSubmit (submitJson,apikey,uuid,logging)
-                logging.info ('###### SUBMITTED TO BACKEND')
+                                logging.info ('###### THERE IS NO MATCH SO FAR THREAD['+str(thn)+']')
+                logging.info ('###### I GIVE UP LOOKING, WILL INFORM THE BACKEND THREAD['+str(thn)+']')
+                try:
+                    jfilename = filename.encode().decode("utf-8")
+                    submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "'+jfilename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
+                except:
+                    submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
+                logging.info ('###### GOING TO SUBMIT TO BACKEND THREAD['+str(thn)+']')
+                result = apicalls.postSubmit (submitJson,apikey,uuid,logging,thn)
+                logging.info ('###### SUBMITTED TO BACKEND THREAD['+str(thn)+']')
                 response = {"game": {"ratings": [], "dates": [], "names": [{'text':filename,'region':'default'}], "roms": [], "cloneof": "0", "genres": [],\
                             "notgame": "false", "system": {"url": "/api/system/"+str(system[0]), "id": int(system[0])}, "players": {"text": "Unknown"},\
                             "synopsis": [{"text":"Could not find Synopsis","language":"en"}], "editor": {}, "medias": [], "developer": {}, "id":0,\
                             "modes": []}}
-                logging.info ('###### RETURNING EMPTY STANDARD RESPONSE')
+                logging.info ('###### RETURNING EMPTY STANDARD RESPONSE THREAD['+str(thn)+']')
                 return response
             else:
                 nosha=True
         else:
             nosha=True
     try:
-        logging.info ('###### I FOUND THE GAME')
+        logging.info ('###### I FOUND THE GAME THREAD['+str(thn)+']')
         rjson = jsonloads(result.text)
-        logging.info ('###### GOT JSON '+str(rjson))
+        logging.info ('###### GOT JSON '+str(rjson)+'THREAD['+str(thn)+']')
         response = rjson['response']
         if nosha:
-            logging.info ('###### I FOUND NO SHA1 BUT I KNOW WHICH GAME IT IS, TELLING THE BACKEND')
+            logging.info ('###### I FOUND NO SHA1 BUT I KNOW WHICH GAME IT IS, TELLING THE BACKEND THREAD['+str(thn)+']')
             try:
-                logging.info ('###### I KNOW WHICH GAME ID IT IS, SO INFORM')
+                logging.info ('###### I KNOW WHICH GAME ID IT IS, SO INFORM THREAD['+str(thn)+']')
                 gameid = str(response['game']['id'])
             except:
-                logging.error ('###### I SHOULD NOT BE HERE!! THERE MUST BE A GAME ID')
+                logging.error ('###### I SHOULD NOT BE HERE!! THERE MUST BE A GAME ID THREAD['+str(thn)+']')
                 gameid = '99999999999999999999999999999999'
             submitJson = '{"request": {"type": "nosha","data": {"gameid":"'+gameid+'","systemid": "'+str(system)+'","filename": "'+filename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}'
-            logging.info ('###### TELLING THE BACKEND')
-            subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging)
+            logging.info ('###### TELLING THE BACKEND THREAD['+str(thn)+']')
+            subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging,thn)
     except Exception as e:
-        logging.error ('###### GETTING INFO FROM API: '+str(result)+' ERROR '+str(e))
-        logging.error ('###### '+str(system)+','+str(filename)+','+str(sha1)+','+str(md5)+','+str(crc))
+        logging.error ('###### GETTING INFO FROM API: '+str(result)+' ERROR '+str(e)+' THREAD['+str(thn)+']')
+        logging.error ('###### '+str(system)+','+str(filename)+','+str(sha1)+','+str(md5)+','+str(crc)+' THREAD['+str(thn)+']')
         submitJson = '{"request": {"type": "error","data": {"filename": "'+filename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}'
-        logging.info ('###### TELLING THE BACKEND I FOUND SOMETHING STRANGE')
-        subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging)
+        logging.info ('###### TELLING THE BACKEND I FOUND SOMETHING STRANGE THREAD['+str(thn)+']')
+        subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging,thn)
         response = {"game": {"ratings": [], "dates": [], "names": [{'text':filename,'region':'default'}], "roms": [], "cloneof": "0", "genres": [],\
                     "notgame": "false", "system": {"url": "/api/system/"+str(system[0]), "id": int(system[0])}, "players": {"text": "Unknown"},\
                     "synopsis": [{"text":"Could not find Synopsis","language":"en"}], "editor": {}, "medias": [], "developer": {}, "id":0,\
@@ -160,8 +207,8 @@ def getInfoFromAPI(system,thisfilename,sha1,md5,crc,apikey,uuid,logging):
         #sysexit()
     return response
 
-def isValidVersion(appVer,apikey,uuid):
-    verJson = apicalls.getVersion(apikey,uuid)
+def isValidVersion(appVer,apikey,uuid,thn):
+    verJson = apicalls.getVersion(apikey,uuid,thn)
     try:
         reqVer = verJson['response']['version']
     except:
@@ -171,50 +218,52 @@ def isValidVersion(appVer,apikey,uuid):
 def getUniqueID():
     return ''.join(findall('..', '%012x' % getnode())).upper()
 
-def loadConfig(logging,q):
+def loadConfig(logging,q,apikey,uuid,thn):
     config = dict()
     config['config']=dict()
     config['config']["SystemsFile"]=""
     config['config']["MountPath"]=""
-    config['decorators']=dict()
-    logging.info ('###### SETTING UP ')
+    config['config']['decorators']=dict()
+    logging.info ('###### SETTING UP THREAD['+str(thn)+']')
     homedir = str(Path.home())+'/.retroscraper/'
     if not ospath.isdir(homedir):
         try:
             makedirs(homedir)
-            logging.info ('####### CREATED HOMEDIR DIRECTORY')
+            logging.info ('####### CREATED HOMEDIR DIRECTORY IN THREAD '+str(thn))
         except Exception as e:
-            logging.error ('###### ERROR SAVING CONFIG IN '+str(homedir)+'  ERROR '+str(e))
+            logging.error ('###### ERROR SAVING CONFIG IN '+str(homedir)+'  ERROR '+str(e)+' IN THREAD '+str(thn))
             q.put('CONFIG ERROR!','popup','I CANNOT CREATE A CONFIG FILE '+str(e))
             return config
     configfilename= homedir+'retroscraper.cfg'
     if not ospath.isfile(configfilename):
         try:
-            logging.info ('###### CONFIG FILE DOES NOT EXIST, CREATING ONE')
+            logging.info ('###### CONFIG FILE DOES NOT EXIST, CREATING ONE IN THREAD '+str(thn))
             f = open(configfilename, "w")
-            logging.info ('###### CONFIG FILE DOES NOT EXIST, CREATED ONE')
-            f.write(jsondumps(config))
-            logging.info ('###### CONFIG FILE DOES NOT EXIST, CLOSING ONE')
+            logging.info ('###### CONFIG FILE DOES NOT EXIST, CREATED ONE IN THREAD '+str(thn))
+            f.write(jsondumps(config['config']))
+            logging.info ('###### CONFIG FILE DOES NOT EXIST, CLOSING ONE IN THREAD '+str(thn))
             f.close()
             return config
         except Exception as e:
             q.put('CONFIG ERROR!','popup','I CANNOT CREATE A CONFIG FILE '+str(e))
             return config
             
-    logging.info ('###### READING CONFIG FILE')
+    logging.info ('###### READING CONFIG FILE IN THREAD '+str(thn))
     f = open(configfilename, "r")
+    configret = dict()
     try:
-        logging.info ('###### READING CONFIG FILE INTO JSON')
-        configret = jsonloads(f.read())
-        logging.info ('###### SUCCESS')
+        logging.info ('###### READING CONFIG FILE INTO JSON IN THREAD '+str(thn))
+        configret['config'] = jsonloads(f.read())
+        logging.info ('###### SUCCESS IN THREAD '+str(thn))
         f.close()
     except Exception as e:
-        logging.info ('###### FAILURE, CREATING EMPTY CONFIG')
-        configret = dict()
+        logging.info ('###### FAILURE, CREATING EMPTY CONFIG IN THREAD '+str(thn))
         configret['config']=dict()
         f.close()
         saveConfig(configret,q)
-    logging.info ('###### RETURNING CONFIG')
+    logging.info ('###### RETURNING CONFIG IN THREAD '+str(thn))
+    configret['downsites']=apicalls.getDownSites(apikey,uuid,'MAIN')
+    logging.info ('++++++ '+str(configret)+' IN THREAD '+str(thn))
     return configret
 
 def saveConfig(config,q):
@@ -222,39 +271,103 @@ def saveConfig(config,q):
     configfilename= homedir+'retroscraper.cfg'
     try:
         f = open(configfilename, "w")
-        f.write(jsondumps(config))
+        f.write(jsondumps(config['config']))
         f.close()
     except Exception as e:
         q.put('CONFIG ERROR!','popup','I CANNOT CREATE A CONFIG FILE '+str(e))
         return config
     return
 
-def processBezels(bezelURL, destbezel, apikey, uuid,filename,path,logging):
-    logging.info ('+++++++==========###### PROCESS BEZEL FOR '+filename+' LOCATED AT '+path)
-    logging.info ('###### DOWNLOADING BEZELS ')
-    logging.info ('###### '+destbezel)
+def processBezels(bezelURL, destbezel, apikey, uuid,filename,path,logging,thn,cli):
+    try:
+        sfn=filename.encode().decode('utf-8')
+    except:
+        sfn=''
+    logging.info ('+++++++==========###### PROCESS BEZEL FOR '+sfn+' LOCATED AT '+path+' THREAD['+str(thn)+']')
+    logging.info ('###### DOWNLOADING BEZELS THREAD['+str(thn)+']')
+    logging.info ('###### '+destbezel+' THREAD['+str(thn)+']')
     destbezel = destbezel.replace('\\','/')
     path = path.replace('\\','/')
     filename = filename.replace('\\','/')
     bezeldir = destbezel[:destbezel.rindex('/')]
-    if not ospath.isdir(bezeldir):
-        makedirs(bezeldir)
-    apicalls.getImageAPI(bezelURL,destbezel,apikey,uuid)
+    apicalls.getImageAPI(bezelURL,destbezel,apikey,uuid,thn,'bezel',cli,logging)
     zipname = filename[filename.rfind('/')+1:]
-    logging.info ('###### ZIPNAME IS '+zipname)
-    bezelcfg = path+'/'+zipname+'.cfg'
-    logging.info ('###### BEZELCFG IS '+bezelcfg)
+    try:
+        szname = zipname.encode().decode('utf-8')
+    except:
+        szname =''
+    logging.info ('###### ZIPNAME IS '+szname+' THREAD['+str(thn)+']')
+    bezelcfg = path+zipname+'.cfg'
+    try:
+        sbc = bezelcfg.encode().decode('utf-8')
+    except:
+        sbc =''
+    logging.info ('###### BEZELCFG IS '+sbc+' THREAD['+str(thn)+']')
     bzlfile,bzlext = ospath.splitext (zipname)
     romcfg = bzlfile+'.cfg'
-    logging.info ('###### ROMCFG IS '+romcfg)
+    try:
+        rcf = romcfg.encode().decode('utf-8')
+    except:
+        rcf =''
+    logging.info ('###### ROMCFG IS '+rcf+' THREAD['+str(thn)+']')
     romcfgpath = bezeldir+'/'+romcfg
-    logging.info ('###### ROMCFGPATH IS '+romcfgpath)
+    try:
+        rcfp = romcfgpath.encode().decode('utf-8')
+    except:
+        rcfp =''
+
+    logging.info ('###### ROMCFGPATH IS '+rcfp+' THREAD['+str(thn)+']')
+    isremote = remote.testPathIsRemote(bezelcfg,logging,thn)
+    if isremote:
+        ## CREATE TEMPORARY FILES
+        rbezelcfg = bezelcfg
+        rromcfgpath = romcfgpath
+        bezelcfg = str(Path.home())+'/.retroscraper/filetmp/bezel'+str(thn)+'.cfg'
+        romcfgpath = str(Path.home())+'/.retroscraper/filetmp/romcf'+str(thn)+'.cfg'
+    logging.info ('###### CREEATING FILE '+sbc+' IN THREAD ['+str(thn)+']')
     f = open(bezelcfg, "w")
-    f.write('input_overlay = "'+ bezeldir+'/'+romcfg+'"\n')
-    f.close
-    f = open(romcfgpath, "w")
-    f.write('overlays = "1"\noverlay0_overlay = "'+destbezel+'"\noverlay0_full_screen = "true"\noverlay0_descs = "0"\n')
-    f.close
+    properfname = normalizeFileName(bezeldir)
+    filetext = 'input_overlay = "'+properfname+'/'+romcfg+'"\n'
+    try:
+        ft = filetext
+        f.write(filetext)
+    except:
+        try:
+            ft = filetext.encode().decode('utf-8')
+        except:
+            ft =''
+        f.write(ft)
+    logging.info ('###### WROTE FILE '+sbc+' === '+ft+' IN THREAD ['+str(thn)+']')
+    f.close()
+    fsize =os.stat(bezelcfg)
+    logging.info ('###### CLOSE FILE '+sbc+' IN RESULTED IN '+str(fsize)+' THREAD ['+str(thn)+']')
+    logging.info ('###### CREEATING FILE '+rcfp+' IN THREAD ['+str(thn)+']')
+    nf = open(romcfgpath, "w")
+    properfname = normalizeFileName(destbezel)
+    filetext = 'overlays = "1"\noverlay0_overlay = "'+properfname+'"\noverlay0_full_screen = "true"\noverlay0_descs = "0"\n'
+    try:
+        ft = filetext
+        nf.write(filetext)
+    except:
+        try:
+            ft=filetext.encode().decode('utf-8')
+        except:
+            ft = ''
+            nf.writr(ft)
+    logging.info ('###### WROTE FILE '+rcf+' === '+ft+' IN THREAD ['+str(thn)+']')
+    nf.close()
+    fsize =os.stat(romcfgpath)
+    logging.info ('###### CLOSE FILE '+rcf+' IN RESULTED IN '+str(fsize)+' THREAD ['+str(thn)+']')
+    if isremote:
+        ## MOVE TEMPORARY FILES TO REMOTE LOCATION
+        logging.info ('###### COPYING BEZELS TO REMOTE LOCATION IN THREAD ['+str(thn)+']')
+        remote.copyToRemote(bezelcfg,rbezelcfg,thn,logging)
+        remote.copyToRemote(romcfgpath,rromcfgpath,thn,logging)
+        logging.info ('###### COPIED BEZELS TO REMOTE LOCATION IN THREAD ['+str(thn)+']')
+        if ospath.isfile(bezelcfg):
+           remove(bezelcfg)
+        if ospath.isfile(romcfgpath):
+            remove(romcfgpath)
 
 def loadSystems(config,apikey,uuid,remoteSystems,q,trans,logging):
     ### LOAD SYSTEMS INTO MEMORY
@@ -339,8 +452,8 @@ def loadSystems(config,apikey,uuid,remoteSystems,q,trans,logging):
         systems=[]
     return systems
 
-def loadCompanies(apikey,uuid):
-    externalCompanies = apicalls.getCompaniesFromAPI(apikey,uuid)
+def loadCompanies(apikey,uuid,thn):
+    externalCompanies = apicalls.getCompaniesFromAPI(apikey,uuid,thn)
     companies = dict()
     for thisCompany in externalCompanies['companies']:
         companies[str(thisCompany['id'])]=thisCompany['text']
@@ -352,7 +465,7 @@ def multiDisk(filename):
     return matchs
 
 def multiHack(filename):
-    checkreg = '\(.*[H|h][A|a][C|c][K|k][^\)]*\)|\(.*[B|b][E|e][T|t][A|a][^\)]*\)'
+    checkreg = '\(.*[H|h][A|a][C|c][K|k][^\)]*\)|\([P|p][R|o][T|t][O|o][T|t][Y|y][P|p][E|e][^\)]*\)|\([D|d][E|e][M|m][O|o][^\)]*\)|\([S|s][A|a][M|m][P|p][L|l][E|e][^\)]*\)|\([B|b][E|e][T|t][A|a][^\)]*\)'    
     matchs = search(checkreg,filename)
     return matchs
 
@@ -370,12 +483,9 @@ def multiCountry(filename):
 def multiVersion(filename):
     checkreg = '.*[V|v]\d*\.\w*'
     matchs = search(checkreg,filename)
-    if not matchs:
-        checkreg = '\(.*[H|h][A|a][C|c][K|k][^\)]*\)|\([P|p][R|o][T|t][O|o][T|t][Y|y][P|p][E|e][^\)]*\)|\([D|d][E|e][M|m][O|o][^\)]*\)|\([S|s][A|a][M|m][P|p][L|l][E|e][^\)]*\)|\([B|b][E|e][T|t][A|a][^\)]*\)'
-        matchs = search(checkreg,filename)
     return matchs
 
-def getMediaUrl(mediapath,file,medias,mediaList,logging,regionList=['wor']):
+def getMediaUrl(mediapath,file,medias,mediaList,logging,thn,regionList=['wor']):
     imageURL = ''
     destfile =''
     for mediatype in mediaList:
@@ -386,7 +496,7 @@ def getMediaUrl(mediapath,file,medias,mediaList,logging,regionList=['wor']):
                     if mediatype in img.values():
                         destfile = mediapath+file+'.'+img['format']
                         imageURL = img['url'].replace(img['region'],'wor')
-                        logging.info ('###### RETURNING '+imageURL)
+                        logging.info ('###### RETURNING '+imageURL+' THREAD['+str(thn)+']')
                         return imageURL,destfile
                 else:
                     if mediatype in img.values() and region in img.values():
@@ -396,30 +506,34 @@ def getMediaUrl(mediapath,file,medias,mediaList,logging,regionList=['wor']):
     return imageURL,destfile
 
 
-def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,thn,xmlvalues):
+def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,thn,xmlvalues,rthn,cli):
     ### SHOULD ADD THE CHECK COFIG BIT
     for xvalue in xmlvalues:
         emptyGameTag=emptyGameTag.replace(xvalue[0],xvalue[1])
-    logging.info ('###### STARTING FILE '+file)
+    try:
+        showfile = file.encode().decode('utf-8')
+    except:
+        showfile = ''
+    logging.info ('###### STARTING FILE '+showfile+'THREAD['+str(thn)+']')
     file=file.replace('\\','/')
     file=str(file)
     if ospath.isdir(file):
-        logging.info ('###### THIS IS A DIRECTORY!')
+        logging.info ('###### THIS IS A DIRECTORY! THREAD['+str(thn)+']')
         ### THIS INFORMS THE THREAD HAS ENDED
-        tq.put(thn)
+        tq.put(rthn)
         return
-    logging.info ('####### GETTING CHECKSUMS FOR '+str(file))
-    mysha1,mymd5,mycrc = getChecksums(file,config,logging)
-    logging.info ('####### GOT CHECKSUMS FOR '+str(file))
+    logging.info ('####### GETTING CHECKSUMS FOR '+str(showfile)+'THREAD['+str(thn)+']')
+    mysha1,mymd5,mycrc = getChecksums(file,config,logging,thn)
+    logging.info ('####### GOT CHECKSUMS FOR '+str(showfile)+' THREAD['+str(thn)+']')
     ## PROCESS FILE AND START DOING MAGIC
-    logging.info ('####### GETTING INFO FOR '+str(file))
-    result = getInfoFromAPI (system['id'],file,mysha1,mymd5,mycrc,apikey,uuid,logging)
-    logging.info ('####### GOT INFO FOR '+str(file))
+    logging.info ('####### GETTING INFO FOR '+str(showfile)+' THREAD['+str(thn)+']')
+    result = getInfoFromAPI (system['id'],file,mysha1,mymd5,mycrc,apikey,uuid,logging,thn)
+    logging.info ('####### GOT INFO FOR '+str(showfile)+' THREAD['+str(thn)+']')
     if (not result) or ('game' not in result.keys()):
         ### THERE WAS AN ERROR GETTING INFORMATION FOR THIS FILE
-        logging.error('###### I COULD NOT GET THE GAME INFORMATION FROM API '+str(result))
+        logging.error('###### I COULD NOT GET THE GAME INFORMATION FROM API '+str(result)+' THREAD['+str(thn)+']')
         ### THIS INFORMS THE THREAD HAS ENDED
-        tq.put(thn)
+        tq.put(rthn)
         return
     try:
         gsysid = result['game']['system']['id']
@@ -432,69 +546,79 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     thisTag = emptyGameTag
     ### Take care of multisystems
     simplefile = file[file.rindex('/')+1:file.rindex('.')]
-    logging.info ('###### SIMPLE FILE NAME :['+str(simplefile)+']')
+    try:
+        showsfile = simplefile.encode().decode('utf-8')
+    except:
+        showsfile =''
+    logging.info ('###### SIMPLE FILE NAME :['+str(showsfile)+'] THREAD['+str(thn)+']')
     system['path'] = system['path'].replace('\\','/')
     try:
         pfbx =  config['config']['preferbox']
     except:
         pfbx = False
     if not pfbx:
-        logging.info ('###### DOWNLOADING SCREENSHOT')
+        logging.info ('###### DOWNLOADING SCREENSHOT THREAD['+str(thn)+']')
         try:
-            imageURL,destimage = getMediaUrl(system['path']+'images/',simplefile,result['game']['medias'],['mixrbv1','ss','sstitle'],logging,['wor','default'])
+            imageURL,destimage = getMediaUrl(system['path']+'images/',simplefile,result['game']['medias'],['mixrbv1','ss','sstitle'],logging,thn,['wor','default'])
         except Exception as e:
             logging.error ('##### EFRROR WHEN DOWNLOADING IMAGES ['+str(result)+']]#####=='+str(e))
     else:
         logging.info ('###### DOWNLOADING BOX')
-        imageURL,destimage = getMediaUrl(system['path']+'images/',simplefile,result['game']['medias'],['box-2D'],logging,['wor'])
+        imageURL,destimage = getMediaUrl(system['path']+'images/',simplefile,result['game']['medias'],['box-2D'],logging,thn,['wor'])
     try:
         novi =  config['config']['novideodown']
     except:
         novi = False
     if not novi:
-        logging.info ('###### DOWNLOADING VIDEO')
-        videoURL,destvideo = getMediaUrl(system['path']+'videos/',simplefile,result['game']['medias'],['video-normalized'],logging,['wor','default'])
+        logging.info ('###### DOWNLOADING VIDEO THREAD['+str(thn)+']')
+        videoURL,destvideo = getMediaUrl(system['path']+'videos/',simplefile,result['game']['medias'],['video-normalized'],logging,thn,['wor','default'])
     else:
-        logging.info ('###### NOT DOWNLOADING VIDEO')
+        logging.info ('###### NOT DOWNLOADING VIDEO THREAD['+str(thn)+']')
         videoURL = ''
         destvideo = ''
-    marqueeURL,destmarquee = getMediaUrl(system['path']+'marquees/',simplefile,result['game']['medias'],['screenmarqueesmall'],logging,['wor','default',])
-    logging.info ('++++++++++++++++ TRYING TO GET BEZELS')
+    marqueeURL,destmarquee = getMediaUrl(system['path']+'marquees/',simplefile,result['game']['medias'],['screenmarqueesmall'],logging,thn,['wor','default',])
+    logging.info ('++++++++++++++++ TRYING TO GET BEZELS THREAD['+str(thn)+']')
     destbezel=''
     bezelURL=''
-    logging.info ('FIRST CASE ')
+    logging.info ('###### FIRST CASE THREAD['+str(thn)+']')
     dpath = system['path'].replace('/roms/','/overlays/')+'bezels/'
-    logging.info ('###### CONVERTING '+str(system['path'])+'    '+dpath)
-    bezelURL,destbezel = getMediaUrl(dpath,simplefile,result['game']['medias'],['bezel-16-9'],logging,['wor','default'])
+    logging.info ('###### CONVERTING '+str(system['path'])+'    '+dpath+' THREAD['+str(thn)+']')
+    bezelURL,destbezel = getMediaUrl(dpath,simplefile,result['game']['medias'],['bezel-16-9'],logging,thn,['wor','default'])
     if destbezel=='' and config['config']['sysbezels']: ## CONFIG UPDATE
         sysmedias=[{"url": "/api/medias/"+str(gsysid)+"/system/bezel-16-9(wor).png",
           "region": "wor",
           "type": "bezel-16-9",
           "format": "png"
         }]
-        bezelURL,destbezel = getMediaUrl(system['path'].replace('/roms/','/overlays/')+'bezels/','system_bezel-'+str(gsysid),sysmedias,['bezel-16-9'],logging,['wor','default'])
-    logging.info ('++++++++++++++++ BACK FROM BEZELS')
+        bezelURL,destbezel = getMediaUrl(system['path'].replace('/roms/','/overlays/')+'bezels/','system_bezel-'+str(gsysid),sysmedias,['bezel-16-9'],logging,thn,['wor','default'])
+    logging.info ('++++++++++++++++ BACK FROM BEZELS THREAD['+str(thn)+']')
     if imageURL !='':
-        success = apicalls.getImageAPI(imageURL,destimage,apikey,uuid)
-        if not success:
+        imglocation = apicalls.getImageAPI(imageURL,destimage,apikey,uuid,thn,'ss',cli,logging)
+        if not imglocation:
             destimage =''
+    else:
+        imglocation = ''
     if videoURL !='':
-        success = apicalls.getImageAPI(videoURL,destvideo,apikey,uuid)
+        success = apicalls.getImageAPI(videoURL,destvideo,apikey,uuid,thn,'video',cli,logging)
         if not success:
             destvideo =''
     if marqueeURL !='':
-        success = apicalls.getImageAPI(marqueeURL,destmarquee,apikey,uuid)
+        success = apicalls.getImageAPI(marqueeURL,destmarquee,apikey,uuid,thn,'marquee',cli,logging)
         if not success:
             destmarquee =''
     if bezelURL !='':
-        logging.info ('==================================##### PROCESSNG BEZEL')
-        logging.info ('##### URL='+str(bezelURL))
-        logging.info ('###### DESTBEZEL = '+str(destbezel))
-        processBezels(bezelURL,destbezel,apikey,uuid,file,system['path'],logging)
-    thisTag = thisTag.replace('$PATH',escape(file))
+        logging.info ('==================================##### PROCESSNG BEZEL THREAD['+str(thn)+']')
+        logging.info ('##### URL='+str(bezelURL)+' THREAD['+str(thn)+']')
+        logging.info ('###### DESTBEZEL = '+str(destbezel)+' THREAD['+str(thn)+']')
+        processBezels(bezelURL,destbezel,apikey,uuid,file,system['path'],logging,thn,cli)
+    thisTag = thisTag.replace('$PATH',normalizeFileName(file))
     logging.info ('###### GAME NAMES FOUND :['+str(result['game']['names'])+']')
     gameName = result['game']['names'][0]['text']
-    logging.info ('###### GAME NAME FOUND :['+gameName+']')
+    try:
+        gmf=gameName.encode().decode('utf-8')
+    except:
+        gmf =''
+    logging.info ('###### GAME NAME FOUND :['+gmf+']')
     matchs = multiDisk(simplefile)
     logging.info ('###### MULTI DISK MATCH :['+str(matchs)+']')
     vmatchs = multiVersion(simplefile)
@@ -524,7 +648,7 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     except:
         logging.info ('###### NO HACK SELECTION CONFIGURED')
     q.put(['gamelabel','text',' Game : '+gameName])
-    q.put(['gameimage','source',destimage])
+    q.put(['gameimage','source',imglocation])
     thisTag = thisTag.replace('$NAME',escape(gameName))
     description = 'Description for this game is empty!'
     founddesc = False
@@ -605,11 +729,11 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     thisTag = thisTag.replace('$DEVELOPER',escape(developer))
     genre=''
     logging.info ('###### REPLACE IMAGE')
-    thisTag = thisTag.replace('$IMAGE',escape(destimage))
+    thisTag = thisTag.replace('$IMAGE',normalizeFileName(destimage))
     logging.info ('###### REPLACE VIDEO')
-    thisTag = thisTag.replace('$VIDEO',escape(destvideo))
+    thisTag = thisTag.replace('$VIDEO',normalizeFileName(destvideo))
     logging.info ('###### REPLACE MARQUEE')
-    thisTag = thisTag.replace('$MARQUEE',escape(destmarquee))
+    thisTag = thisTag.replace('$MARQUEE',normalizeFileName(destmarquee))
     logging.info ('###### REPLACE RELEASE DATE')
     thisTag = thisTag.replace('$RELEASEDATE','')
     thisTag = thisTag.replace('$PLAYERS','')
@@ -622,9 +746,9 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     sq.put ((thisTag,int(result['game']['id'])))
     logging.info ('###### DID PUT IN SQUEUE')
     logging.info ('###### PUT IN TQUEUE')
-    tq.put(thn)
+    tq.put(rthn)
     logging.info ('###### DID PUT IN TQUEUE')
-    logging.info ('###### DONE FILE '+file)
+    logging.info ('###### DONE FILE '+showfile)
     return
 
 def getGamelistData(gamelistfile):
@@ -658,7 +782,7 @@ def getGamelistData(gamelistfile):
                     gcpath = tmppath[tmppath.rindex('/')+1:]
                 if '\\' in tmppath:
                     gcpath = tmppath[tmppath.rindex('\\')+1:]
-                if '/' not in tmppath and '\\' not in tempath:
+                if '/' not in tmppath and '\\' not in tmppath:
                     gcpath = tmppath
         if not favo :
             myValues.append(("$FAVO",""))
@@ -670,7 +794,21 @@ def getGamelistData(gamelistfile):
             currValues[gcpath]=myValues
     return currValues
 
-def findMissingGames(systemid,havelist,apikey,uuid,systems,queue,doDownload):
+def downloadmissingrom(downsites,sysid,romname,syspath):
+    logging.info ('DOWNLOAD MISSING ROM '+romname)
+    success = False
+    for site in downsites['sites']:
+        for system in site['systems']:
+            if int(system['id'])==int(sysid):
+                for downurl in system['urls']:
+                    logging.info ('========================== DOING '+str(sysid)+' ROM '+romname)    
+                    destfile = apicalls.downloadRom(downurl,syspath,romname)
+                    ###### TO DO:
+                    #### BREAK FROM LOOP IF SUCCESFULL
+                    #### CHECK IF IT COMPRESSED AND UNCOMPRESS
+    return success
+
+def findMissingGames(config,systemid,havelist,apikey,uuid,systems,queue,doDownload):
     allgames = apicalls.getAllGames(systemid,apikey,uuid)
     missfile ='missing.txt'
     f = open (missfile,'a')
@@ -689,23 +827,27 @@ def findMissingGames(systemid,havelist,apikey,uuid,systems,queue,doDownload):
             roms=''
             for rom in thisGame['game']['roms']:
                 if doDownload:
-                    apicalls.download_file('')
-                roms = roms+rom['filename']+'\n'
+                    if downloadmissingrom(config['downsites'],systemid,rom['filename'],thissys['path']):
+                        pass
+                    else:
+                        roms = roms+rom['filename']+'\n'
+                else:
+                    roms = roms+rom['filename']+'\n'
             roms = roms + '--------------------------------------------------------------------------\n'
             output=output+roms
             f.write(output)
     f.close()
     return
 
-def getSystemIcon(systemid,apikey,uuid):
+def getSystemIcon(systemid,apikey,uuid,thn,cli):
     dpath = str(Path.home())+'/.retroscraper'
     dfile = dpath+'/system.png'
     if ospath.isfile(dfile):
         remove(dfile)
-    apicalls.getImageAPI('/api/medias/'+str(systemid)+'/system/logo.png',dfile,apikey,uuid)
+    apicalls.getImageAPI('/api/medias/'+str(systemid)+'/system/logo.png',dfile,apikey,uuid,thn,'syslogo',cli,logging)
     return dfile
 
-def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,selectedSystems,scanqueue,origrompath,trans):
+def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,selectedSystems,scanqueue,origrompath,trans,thn,cli=False):
     hpath = str(Path.home())+'/.retroscraper/'
     q.put(['gamelabel','text','Scanning Files'])
     missfile ='missing.txt'
@@ -734,7 +876,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         logging.info ('###### DOING '+str(system))
         if config['config']['MountPath']:
             system['path']=system['path'].replace(origrompath,config['config']['MountPath'])
-        if not ospath.isdir(system['path']):
+        if not testPath(system['path'],logging,thn):
             errormsg = trans['nodirmsg'].replace('$DIR',str(system['path'])).replace('$SYS',str(system['name']))
             logging.error ('###### COULD NOT FIND PATH '+system['path'])
             q.put(['errorlabel','text',errormsg])
@@ -749,14 +891,20 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             spath = system['path']
             if spath[-1] != '/':
                 spath = spath +'/'
-            try:
-                if config['config']['recursive']:
-                    romfiles = [x for x in sorted(Path(spath).glob('**/*.*')) if (('/images/' not in x.as_posix()) and ('/videos/' not in x.as_posix()) and ('/marquees/' not in x.as_posix()) and ('.cfg' not in x.name) and ('.save' not in x.name))]
-                else:
+            if not remote.testPathIsRemote(spath,logging,thn):
+                logging.info ('###### GOING FOR LOCAL PATH')
+                try:
+                    if config['config']['recursive']:
+                        romfiles = [x for x in sorted(Path(spath).glob('**/*.*')) if (('/images/' not in x.as_posix()) and ('/videos/' not in x.as_posix()) and ('/marquees/' not in x.as_posix()) and ('.cfg' not in x.name) and ('.save' not in x.name))]
+                    else:
+                        romfiles = [x for x in sorted(Path(spath).glob('*.*')) if (('/images/' not in x.as_posix()) and ('/videos/' not in x.as_posix()) and ('/marquees/' not in x.as_posix()) and ('.cfg' not in x.name) and ('.save' not in x.name))]
+                except:
                     romfiles = [x for x in sorted(Path(spath).glob('*.*')) if (('/images/' not in x.as_posix()) and ('/videos/' not in x.as_posix()) and ('/marquees/' not in x.as_posix()) and ('.cfg' not in x.name) and ('.save' not in x.name))]
-            except:
-                romfiles = [x for x in sorted(Path(spath).glob('*.*')) if (('/images/' not in x.as_posix()) and ('/videos/' not in x.as_posix()) and ('/marquees/' not in x.as_posix()) and ('.cfg' not in x.name) and ('.save' not in x.name))]
-            logging.info ('###### FOUND '+str(len(romfiles))+' ROMS FOR SYSTEM')
+                logging.info ('###### FOUND '+str(len(romfiles))+' ROMS FOR SYSTEM')
+            else:
+                logging.info ('###### GOING FOR REMOTE PATH '+spath)
+                remotefiles = remote.listRemoteDir(spath,logging,thn)
+                romfiles = [x for x in sorted(remotefiles) if (('/images' not in x) and ('/videos' not in x) and ('/marquees' not in x) and ('.cfg' not in x) and ('.save' not in x) and ('gamelist.xml' not in x))]
         except Exception as e:
             logging.error ('####### CANNOT OPEN SYSTEM DIR '+system['path']+' ERROR '+str(e))
             errormsg = trans['nodirmsg'].replace('$DIR',str(system['path'])).replace('$SYS',str(system['name']))
@@ -774,7 +922,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             sysid=75
         else:
             sysid=system['id'][0]
-        getSystemIcon(sysid,apikey,uuid)
+        getSystemIcon(sysid,apikey,uuid,thn,cli)
         q.put(['sysImage','source',hpath+'system.png'])
         q.put(['sysImageGame','source',hpath+'system.png'])
         q.put(['sysLabel','text','System : '+str(system['name'])+' - '+str(len(romfiles))+' files'])
@@ -802,12 +950,16 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                 logging.info ('###### DELETED DIRECTORY MARQUEES ')
             except Exception as e:
                 logging.info ('###### COULD NOT DELETE DIRECTORY MARQUEES '+str(e))
-        if not ospath.isdir(system['path']+'images/'):
-            mkdir(system['path']+'images/')
-        if not ospath.isdir(system['path']+'videos/'):
-            mkdir(system['path']+'videos/')
-        if not ospath.isdir(system['path']+'marquees/'):
-            mkdir(system['path']+'marquees/')
+        if not pathExists(system['path']+'images/',logging,thn):
+            makedir(system['path']+'images/',logging,thn)
+        if not pathExists (system['path']+'videos/',logging,thn):
+            makedir(system['path']+'videos/',logging,thn)
+        if not pathExists (system['path']+'marquees/',logging,thn):
+            makedir(system['path']+'marquees/',logging,thn)
+        bpath = system['path'].replace('/roms/','/overlays/')+'bezels/'
+        if not pathExists(bpath,logging,thn):
+            makedir(bpath,logging,thn)
+
         currFileIdx = 0
         totalfiles = len(romfiles)
         sq = Queue()
@@ -817,48 +969,58 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         queuefull = False
         havegames=[]
         while (currFileIdx < totalfiles) and not donesystem:
-            if currFileIdx >= totalfiles:
-                donesystem = True
-            else:
-                file = str(romfiles[currFileIdx])
-                if '/' in file:
-                    filename = file[file.rindex('/')+1:]
-                if '\\' in file:
-                    filename = file[file.rindex('\\')+1:]
-                if '\\' not in file and '/' not in file:
-                    filename = file
-                if '.' in file:
-                    filext = file[file.rindex('.'):]
+            if not queuefull:
+                if currFileIdx >= totalfiles:
+                    donesystem = True
                 else:
-                    filext=''
-                if filename in currglvalues:
-                    oldValues = currglvalues[filename]
-                else:
-                    ### This file was not in the CURRENT XML
-                    oldValues=[('$LASTPLAY','0'),('$FAVO',''),('$PLAYCOUNT','0')]
-                if not queuefull:
-                    if (not filext in system['extension']) or ('gamelist.xml' in file.lower()):
-                        try:
-                            logging.info ('###### This file ['+file+'] is not in the list of accepted extensions')
-                        except:
-                            logging.info ('###### This file [] is not in the list of accepted extensions')
-                        q.put(['scrapPB','valueincrease'])
-                        sq.put ('')
-                        currFileIdx = currFileIdx+1
+                    file = str(romfiles[currFileIdx])
+                    try:
+                        logging.info ('####### STARTING WITH FILE '+str(file))
+                        logfilename = file
+                    except:
+                        logfilename = ''
+                        logging.info ('####### STARTING WITH FILE ')
+                    if '/' in file:
+                        filename = file[file.rindex('/')+1:]
+                    if '\\' in file:
+                        filename = file[file.rindex('\\')+1:]
+                    if '\\' not in file and '/' not in file:
+                        filename = file
+                    if '.' in file:
+                        filext = file[file.rindex('.'):]
                     else:
-                        ### RANGE OF THREADS
-                        for thrn in range (0,6):
+                        filext=''
+                    if filename in currglvalues:
+                        oldValues = currglvalues[filename]
+                    else:
+                        ### This file was not in the CURRENT XML
+                        oldValues=[('$LASTPLAY','0'),('$FAVO',''),('$PLAYCOUNT','0')]
+                    logging.info ('####### TRIMMED TO FILE '+logfilename)
+                if (not filext in system['extension']) or ('gamelist.xml' in file.lower()):
+                    logging.info ('###### This file ['+logfilename+'] is not in the list of accepted extensions')
+                    q.put(['scrapPB','valueincrease'])
+                    sq.put ('')
+                    currFileIdx = currFileIdx+1
+                else:
+                    ### RANGE OF THREADS
+                    for thrn in range (0,6):
+                        logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
+                        if thread_list[thrn]==None:
+                            currFileIdx = currFileIdx+1
+                            try:
+                                showfile = file.encode().decode('utf-8')
+                            except Exception as e:
+                                logging.info('###### EXCEPTION '+str(e)+' IN THREAD '+str(thrn))
+                                showfile = ''
+                            logging.info ('###### STARTING FILE '+showfile+' IN THREAD '+str(thrn))
+                            uthrn = (int(system['id'][0])*100000)+(currFileIdx*10)+thrn
+                            thread = Thread(target=getFileInfo,args=(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,uthrn,oldValues,thrn,cli))
+                            thread_list[thrn]=thread
                             logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
-                            if thread_list[thrn]==None:
-                                currFileIdx = currFileIdx+1
-                                logging.info ('###### STARTING FILE '+file+' IN THREAD '+str(thrn))
-                                thread = Thread(target=getFileInfo,args=(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,thrn,oldValues))
-                                thread_list[thrn]=thread
-                                logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
-                                thread.start()
-                                queuefull = not (None in thread_list)
-                                logging.info ('###### IS QUEUE FULL??? '+str(queuefull))
-                                break
+                            thread.start()
+                            queuefull = not (None in thread_list)
+                            logging.info ('###### IS QUEUE FULL??? '+str(queuefull))
+                            break
             try:
                 value = tq.get_nowait()
                 thread_list[value].join()
@@ -870,7 +1032,15 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                 value = sq.get_nowait()
                 try:
                     if value:
-                        writeFile.write(value[0]+"")
+                        try:
+                            writeFile.write(value[0]+"")
+                        except:
+                            try:
+                                wvalue = value[0].encode().decode('utf-8')
+                                writeFile.write(wvalue)
+                            except:
+                                pass
+                            
                         havegames.append(value[1])
                 except Exception as e:
                     logging.error ('###### UNABLE TO WRITE TO GAMELIST FILE:'+str(e))
@@ -883,47 +1053,64 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             except:
                 pass
             sleep(0.1)
-        logging.info ('###### CLOSING GAMELIST.XML')
+        logging.info ('###### CLOSING GAMELIST.XML IN THREAD '+str(thn))
         writeFile.write("</gameList>")
-        logging.info ('###### FILE CLOSING GAMELIST.XML')
+        logging.info ('###### FILE CLOSING GAMELIST.XML IN THREAD '+str(thn))
         writeFile.close()
         ###############################################################################
         bkcount = 1
         try:
-            logging.info ('###### CHECKING IF NEED TO BACKUP OR NOT')
+            logging.info ('###### CHECKING IF NEED TO BACKUP OR NOT IN THREAD '+str(thn))
             chk  = config['config']['nobackup']
         except:
-            logging.info ('###### THERE IS NO VALUE IN CONFIG')
+            logging.info ('###### THERE IS NO VALUE IN CONFIG IN THREAD '+str(thn))
             chk = True
-            logging.info ('######DEFAULTED TO TRUE')
+            logging.info ('######DEFAULTED TO TRUE IN THREAD '+str(thn))
         if not chk:
-            logging.info ('###### I NEED TO DO BACKUP')
+            logging.info ('###### I NEED TO DO BACKUP IN THREAD '+str(thn))
             while ospath.isfile(outXMLFile+'.'+str(bkcount)):
-                logging.info ('###### FILE '+str(bkcount)+' EXISTS')
+                logging.info ('###### FILE '+str(bkcount)+' EXISTS IN THREAD '+str(thn))
                 bkcount = bkcount + 1
-            logging.info ('###### FILE '+str(bkcount)+' DOES NOT EXIST - MAKING BACKUP')
+            logging.info ('###### FILE '+str(bkcount)+' DOES NOT EXIST - MAKING BACKUP IN THREAD '+str(thn))
             if ospath.isfile(outXMLFile):
                 result = copyfile(outXMLFile,outXMLFile+'.'+str(bkcount))
-                logging.info ('###### FILE '+str(bkcount)+' BACKUP DONE')
-        logging.info ('###### COPYING NEW GAMELIST')
-        result = copyfile(tmpxmlFile,outXMLFile)
-        logging.info ('###### COPIED NEW GAMELIST')
+                logging.info ('###### FILE '+str(bkcount)+' BACKUP DONE IN THREAD '+str(thn))
+        logging.info ('###### COPYING NEW GAMELIST IN THREAD '+str(thn))
+        
+        ## TODO - CHECK IF FILE IS REMOTE
+        if not remote.testPathIsRemote(outXMLFile,logging,thn):
+            result = copyfile(tmpxmlFile,outXMLFile)
+        else:
+            logging.info ('####### COPYING GAMELIST.XML TO REMOTE DESTINATION IN THREAD '+str(thn))
+            remote.copyToRemote(tmpxmlFile,outXMLFile,thn,logging)
+        remove(tmpxmlFile)
+        logging.info ('###### COPIED NEW GAMELIST IN THREAD '+str(thn))
         try:
-            findmissing=config['config']['findmissing']
+            findmissing=config['config']['domissfile']
         except:
             findmissing = False
         try:
-            doDownload=config['config']['downloadmissing']
+            doDownload=config['config']['downmissing']
         except:
             doDownload = False
         if findmissing or doDownload:
-            logging.info ('##### GOING TO FIND MISSING GAMES')
-            findMissingGames(sysid,havegames,apikey,uuid,systems,q,doDownload)
-            logging.info ('##### DONE FINDING MISSING GAMES')
+            logging.info ('##### GOING TO FIND MISSING GAMES IN THREAD '+str(thn))
+            findMissingGames(config,sysid,havegames,apikey,uuid,systems,q,doDownload)
+            logging.info ('##### DONE FINDING MISSING GAMES IN THREAD '+str(thn))
         if getmeout:
-            logging.info ('###### INFORMING SCAN DONE')
+            if ospath.isfile(hpath+'system.png'):
+                remove(hpath+'system.png')
+            if ospath.isdir(str(Path.home())+'/.retroscraper/imgtmp/'):
+                logging.info ('###### REMOVING TEMP IMAGES DIR')
+                rmtree(str(Path.home())+'/.retroscraper/imgtmp/')
+                logging.info ('###### REMOVED TEMP IMAGES DIR')
+            if ospath.isdir(str(Path.home())+'/.retroscraper/filetmp/'):
+                logging.info ('###### REMOVING TEMP IMAGES DIR')
+                rmtree(str(Path.home())+'/.retroscraper/filetmp/')
+                logging.info ('###### REMOVED TEMP IMAGES DIR')
+            logging.info ('###### INFORMING SCAN DONE IN THREAD '+str(thn))
             q.put(['scandone','scandone',False])
-            logging.info ('###### INFORMED SCAN DONE')
+            logging.info ('###### INFORMED SCAN DONE IN THREAD '+str(thn))
             q.put(['gamelabel','text',''])
             q.put(['gamedesc','text',''])
             q.put(['gameimage','source',''])
@@ -931,8 +1118,6 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             q.put(['sysImageGame','source',''])
             q.put(['sysLabel','text',trans['alldone']])
             q.put(['scandone','scandone',True])
-            if ospath.isfile(hpath+'system.png'):
-                remove(hpath+'system.png')
             return
     q.put(['gamelabel','text',''])
     q.put(['gamedesc','text',''])
@@ -944,7 +1129,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
     if ospath.isfile(hpath+'system.png'):
         remove(hpath+'system.png')
 
-def getAbsRomPath(testpath):
+def getAbsRomPath(testpath,thn):
     #print ('Received path '+testpath)
     retpath = ''
     if 'roms' in testpath.lower():

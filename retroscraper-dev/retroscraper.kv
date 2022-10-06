@@ -21,7 +21,7 @@
                 TabbedPanel:
                         do_default_tab: False
                         background_color: (0, 0, 0, 0)
-                        tab_width: self.parent.width / 4
+                        tab_width: self.parent.width / 5
                         TabbedPanelItem:
                                 id: tabone
                                 text: 'Games'
@@ -462,7 +462,7 @@
                                                         size:(32,0)
                                                         size_hint:(None,1)
                                                         id: optimizemedia
-                                                        on_press:root.doBezels('system')
+                                                        #on_press:root.doCleanMedia('')
                                                 Label:
                                                         size_hint:(1,1)
                                                         size: self.texture_size
@@ -553,9 +553,59 @@
                                                         valign: "middle"
                                                         outline_color: (0,0,0)
                                                         outline_width: 1
+                                        GridLayout:
+                                                orientation: 'lr-tb'
+                                                row_force_default:True
+                                                row_default_height: 32
+                                                cols: 4
+                                                CheckBox:
+                                                        id: domissfile
+                                                        on_press: root.toggleDomissfile('bah')
+                                                        size:(32,0)
+                                                        size_hint:(None,1)
+                                                Label:
+                                                        id: domissfilelabel
+                                                        size: self.texture_size
+                                                        font_name: 'sonic.ttf'
+                                                        font_size: 14
+                                                        text:'CREATE MISSING LIST'
+                                                        outline_color: (0,0,0)
+                                                        size_hint:(1,1)
+                                                        outline_width: 1
+                                                        text_size: self.size
+                                                        halign: "left"
+                                                        valign: "middle"
+                                                CheckBox:
+                                                        size:(32,0)
+                                                        size_hint:(None,1)
+                                                        id: downmissing
+                                                        on_press: root.toggledownmissing('bah')
+                                                Label:
+                                                        size_hint:(1,1)
+                                                        size: self.texture_size
+                                                        id:downmissinglabel
+                                                        font_name: 'sonic.ttf'
+                                                        font_size: 14
+                                                        text:'Try to download missing files'
+                                                        text_size: self.size
+                                                        halign: "left"
+                                                        valign: "middle"
+                                                        outline_color: (0,0,0)
+                                                        outline_width: 1
                                         HSeparator:
                         TabbedPanelItem:
-                                id: tabfour
+                                id: tabremote
+                                text: 'Remote'
+                                font_name: 'sonic.ttf'
+                                ScrollView:
+                                        scroll_type: ['bars']
+                                        bar_width: 10
+                                        GridLayout:
+                                                id:tochange
+                                                size_hint_y:None
+                                                cols: 1
+                        TabbedPanelItem:
+                                id: taberror
                                 text: 'Errors'
                                 font_name: 'sonic.ttf'
                                 ScrollView:
