@@ -17,7 +17,7 @@ It will create a backup of the gamelist.xml files by default, use the --nobackup
 
 ### From source:
 
-Download all files in one directory. (you can use git clone also)
+Download all files in one directory. (you can use git clone also :  git clone https://github.com/zayamatias/retroscraper)
 
 Verify you have python 3.7 or greater installed:
 
