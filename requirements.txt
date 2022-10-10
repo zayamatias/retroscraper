@@ -7,3 +7,4 @@ numpy==1.21.1
 paramiko==2.11.0
 Pillow==9.2.0
 requests==2.21.0
+pysmb==1.2.8
