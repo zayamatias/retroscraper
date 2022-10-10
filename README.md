@@ -17,19 +17,19 @@ It will create a backup of the gamelist.xml files by default, use the --nobackup
 
 ### From source:
 
-Excute as 'python retroscraper.py'. 
+Download all files in one directory. (you can use git clone also)
+
+Verify you have python 3.7 or greater installed:
+
+python --version
+
+(Sometimes you will need to replace the command python by python3)
+
+Excute as 'python retroscraper.py' (or python3 retroscraper.py). 
 
 Make sure you have installed all dependencies:
 
-pip install -r requirements.txt
-
-### From precompiled binaries:
-
-Simply download the pre-compiled binaries for your system from the [releases page](https://github.com/zayamatias/retroscraper/releases). Currently windows, rpi and linux_x64 exist. For linux version you need to do 'chmod +rwx retroscraper.linux' and for rpi 'chmod +rwx retroscraper.rpi' to be able to execute it.
-
-At first run it will create an empty retroscraper.cfg file, which will be used to keep the configuration as you edit it.
-
-In every run, it will verify with the backend if the version you're running is the latest one. It will also download te resources needed (images/translations). If you have a problem wuth this, please do not use it.
+pip install -r requirements.txt (or python3 -m pip install requirements.txt)
 
 ## GUI Mode
 
