@@ -31,6 +31,10 @@ Make sure you have installed all dependencies:
 
 pip install -r requirements.txt (or python3 -m pip install requirements.txt)
 
+### Troubleshooting
+
+If the application seems not to be starting, you can find the logs under your home directory (user directory in windows) under the .kivy/logs directory. This should help you understanding the issue.
+
 ## GUI Mode
 
 GUI mode is executed if you run the program without any commands (python retroscraper.py) and opens a windows such as this:
