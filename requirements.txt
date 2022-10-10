@@ -4,5 +4,4 @@ Kivy==2.0.0
 kivy_garden==0.1.5
 numpy==1.21.1
 Pillow==9.2.0
-remote==dev
 requests==2.21.0
