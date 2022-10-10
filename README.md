@@ -17,7 +17,11 @@ It will create a backup of the gamelist.xml files by default, use the --nobackup
 
 ### From source:
 
-Excute as 'python retroscraper.py'.
+Excute as 'python retroscraper.py'. 
+
+Make sure you have installed all dependencies:
+
+pip install -r requirements.txt
 
 ### From precompiled binaries:
 
