@@ -41,6 +41,8 @@ If the application seems not to be starting, you can find the logs under your ho
 
 ## GUI Mode
 
+This mode is, obviously, not available when running directly on retropie.
+
 GUI mode is executed if you run the program without any commands (python retroscraper.py) and opens a windows such as this:
 
 ![image](https://user-images.githubusercontent.com/32246591/162161430-0f74ff42-00d2-4e27-82df-4fa56c3a0bee.png)
