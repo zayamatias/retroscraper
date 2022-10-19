@@ -1,10 +1,10 @@
 from curses.textpad import Textbox, rectangle
 from platform import system
-from os import environ,path, remove
-environ["KIVY_NO_CONSOLELOG"] = "1"
-environ["KCFG_KIVY_LOG_LEVEL"] = "error"
-environ["KIVY_NO_ARGS"] = "1"
-environ["KIVY_TEXT"] = "sdl2"
+import os
+os.environ["KIVY_NO_CONSOLELOG"] = "1"
+os.environ["KCFG_KIVY_LOG_LEVEL"] = "error"
+os.environ["KIVY_NO_ARGS"] = "1"
+os.environ["KIVY_TEXT"] = "sdl2"
 import kivy.graphics.cgl_backend.cgl_sdl2
 import kivy.uix.spinner
 import kivy.uix.progressbar
@@ -35,7 +35,6 @@ from kivy.config import Config
 from math import ceil
 from kivy.core.window import Window
 from kivy.resources import resource_add_path, resource_find
-import os
 from kivy_garden import filebrowser
 import kivy.uix.splitter
 import kivy.uix.stacklayout
@@ -49,12 +48,11 @@ if platform.system().lower().startswith('win'):
 
 # nuitka builds
 try:
-    exec_dir = path.dirname(path.realpath(sys.argv[0]))
-    environ['KIVY_DATA_DIR'] = path.join(exec_dir, 'data')
+    exec_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+    os.environ['KIVY_DATA_DIR'] = os.path.join(exec_dir, 'data')
 except:
     pass
 
-#globalapikey='45497D1CF40B6E442CABA2B5C5CF8017D8CB72E7'
 globalapikey='A6512E49024B7D064F6A61B4F02E1270B1D77793'
 version = '0.5'
 trans = dict()
@@ -349,13 +347,13 @@ class MainScreen(BoxLayout):
                     self.config['config']['SystemsFile']=remote.getRemoteEsConfig(iplist[0],logging,thn)
         else:
             try:
-                if not path.isfile(self.config['config']['SystemsFile']) or '.retroscraper' in config['config']['SystemsFile']:
+                if not os.path.isfile(self.config['config']['SystemsFile']) or '.retroscraper' in config['config']['SystemsFile']:
                     ### Try to locate es_systems:
-                    if path.isfile('~/.emulationstation/es_systems.cfg'):
+                    if os.path.isfile('~/.emulationstation/es_systems.cfg'):
                         self.config['config']['SystemsFile'] = '~/.emulationstation/es_systems.cfg'
-                    if path.isfile('/etc/emulationstation/es_systems.cfg'):
+                    if os.path.isfile('/etc/emulationstation/es_systems.cfg'):
                         self.config['config']['SystemsFile'] = '/etc/emulationstation/es_systems.cfg'
-                    if not path.isfile(self.config['config']['SystemsFile']):
+                    if not os.path.isfile(self.config['config']['SystemsFile']):
                         logging.error('###### SYSTEMS FILE CANNOT BE FOUND '+str(self.config['config']['SystemsFile']))
                         return False
             except Exception as e:
@@ -657,7 +655,7 @@ class MainScreen(BoxLayout):
             if event[1]=='value':
                 self.ids[event[0]].value = event[2]
             if event[1]=='source':
-                self.ids[event[0]].source=event[2]
+                self.ids[event[0]].source=str(event[2])
                 if event[2] == '':
                     self.ids[event[0]].color=(0,0,0,0)
                 else:
@@ -666,7 +664,7 @@ class MainScreen(BoxLayout):
                 ## DELETE FILE IF ALREADY DISPLAYED
                 if os.path.isfile(event[2]) and 'system' not in event[2]:
                     logging.info ('REMOVING '+event[2])
-                    remove(event[2])
+                    os.remove(event[2])
             if event[1]=='scandone':
                 self.callScanThreadEnd(event[2])
             if event[1]=='popup':
@@ -839,7 +837,7 @@ if __name__ == '__main__':
         if plat == 'LINUX':
             ## We'running under linux
             ## I need to verify that an actual desktop is running
-            desktop = environ.get('DESKTOP_SESSION')
+            desktop = os.environ.get('DESKTOP_SESSION')
             if desktop == None:
                 print ('It seems you\'re running from a desktopless environment, defaulting to cli mode')
                 cli = True
@@ -882,13 +880,13 @@ if __name__ == '__main__':
             else:
                 print ('No remote systems were found!! Quitting!')
                 sysexit()
-        elif not path.isfile(config['config']['SystemsFile']) or '.retroscraper' in config['config']['SystemsFile']:
+        elif not os.path.isfile(config['config']['SystemsFile']) or '.retroscraper' in config['config']['SystemsFile']:
             ### Try to locate es_systems:
-            if path.isfile('~/.emulationstation/es_systems.cfg'):
+            if os.path.isfile('~/.emulationstation/es_systems.cfg'):
                 config['config']['SystemsFile'] = '~/.emulationstation/es_systems.cfg'
-            if path.isfile('/etc/emulationstation/es_systems.cfg'):
+            if os.path.isfile('/etc/emulationstation/es_systems.cfg'):
                 config['config']['SystemsFile'] = '/etc/emulationstation/es_systems.cfg'
-            if not path.isfile(config['config']['SystemsFile']):
+            if not os.path.isfile(config['config']['SystemsFile']):
                 print ('There seems to be an error in your retroscraper config file, I cannot find the systems configuration file (usually something like es_systems.cfg)')
                 logging.error('###### SYSTEMS FILE CANNOT BE FOUND '+str(config['config']['SystemsFile']))
                 sysexit()
