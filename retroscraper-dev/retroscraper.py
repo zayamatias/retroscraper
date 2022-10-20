@@ -24,7 +24,7 @@ from queue import Queue
 from kivy.clock import Clock    
 from sys import exit as sysexit
 import sys
-from argparse import ArgumentParser
+import argparse
 import curses
 from time import sleep
 from random import randint,randrange
@@ -45,6 +45,13 @@ from pathlib import Path as sysPath
 
 if platform.system().lower().startswith('win'):
     import win32timezone
+
+## Override Argparse exit on error
+class ArgumentParser(argparse.ArgumentParser):    
+    def error(self, message):
+        sys.stderr.write('error: %s\n' % message)
+        self.print_help()
+        sys.exit(2)
 
 # nuitka builds
 try:
@@ -751,9 +758,10 @@ if __name__ == '__main__':
     parser.add_argument('--remote', help='Scan a remote RetroPie intsallation',action='store_true')
     parser.add_argument('--systems', help='List of systems to scan (comma separated values)',nargs=1)
     try:
-        argsvals = vars(parser.parse_args())
-    except Exception as e:
-        print ('Command error '+str(e))
+        args = parser.parse_args()
+        argsvals = vars(args)
+    except argparse.ArgumentError as exc:
+        print (exc.message, '\n', exc.argument)
     print ('Loading RetroScraper config File')
     logging.info ('###### LOADING RETROSCRAPER CONFIG')
     q=Queue()
