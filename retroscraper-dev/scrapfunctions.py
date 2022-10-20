@@ -460,8 +460,11 @@ def loadCompanies(apikey,uuid,thn):
     return companies
 
 def multiDisk(filename):
+    matchs=[]
     checkreg = '\([P|p][A|a][R|r][T|t][^\)]*\)|\([F|f][I|i][L|l][E|e][^\)]*\)|\([D|d][I|i][S|s][K|k][^\)]*\)|\([S|s][I|i][D|d][E|e][^\)]*\)|\([D|d][I|i][S|s][C|c][^\)]*\)|\([T|t][A|a][P|p][E|e][^\)]*\)'
-    matchs = findall(checkreg,filename)
+    matchs = matchs+findall(checkreg,filename)
+    checkreg = '[G|g][A|a][M|m][E|e]\ [D|d][I|i][S|s][K|k]\ \d*'
+    matchs = matchs+findall(checkreg,filename)
     return matchs
 
 def multiHack(filename):
@@ -470,18 +473,35 @@ def multiHack(filename):
     return matchs
 
 def multiCountry(filename):
+    matchs=[]
     checkreg = '\([E|e][U|u][R|r][O|o][P|p][E|e][^\)]*\)|\([U|u][S|s][A|a][^\)]*\)|\([J|j][A|a][P|p][A|a][N|n][^\)]*\)|\([E|e][U|u][R|r][A|a][S|s][I|i][A|a][^\)]*\)'
-    matchs = findall(checkreg,filename)
-    if not matchs:
-        checkreg = '\([S|s][P|p][A|a][I|i][N|n][^\)]*\)|\([F|f][R|r][A|a][N|n][C|c][E|e][^\)]*\)|\([G|g][E|e][R|r][M|m][A|a][N|n][Y|y][^\)]*\)'
-        matchs = findall(checkreg,filename)
-    if not matchs:
-        checkreg = '\([P|p][A|a][L|l][^\)]*\)|\([N|n][T|t][S|s][C|c][^\)]*\)|\([E|e][N|n][G|g][^\)]*\)|\([R|r][U|u][^\)]*\)|\([E|e][^\)]*\)|\([U|u][^\)]*\)|\([J|j][^\)]*\)|\([S|s][^\)]*\)|\([N|n][^\)]*\)|\([F|f][^\)]*\)|\([J|j][P|p][^\)]*\)|\([N|n][L|l][^\)]*\)|\([K|k][R|r][^\)]*\)|\([E|e][S|s][^\)]*\)'
-        matchs = findall(checkreg,filename)
+    matchs = matchs+findall(checkreg,filename)
+    checkreg = '\([S|s][P|p][A|a][I|i][N|n][^\)]*\)|\([F|f][R|r][A|a][N|n][C|c][E|e][^\)]*\)|\([G|g][E|e][R|r][M|m][A|a][N|n][Y|y][^\)]*\)'
+    matchs = matchs+findall(checkreg,filename)
+    checkreg = '\([P|p][A|a][L|l][^\)]*\)|\([N|n][T|t][S|s][C|c][^\)]*\)|\([E|e][N|n][G|g][^\)]*\)|\([R|r][U|u][^\)]*\)|\([D|d][E|e][^\)]*\)|\([E|e][^\)]*\)|\([U|u][^\)]*\)|\([J|j][^\)]*\)|\([S|s][^\)]*\)|\([N|n][^\)]*\)|\([F|f][^\)]*\)|\([J|j][P|p][^\)]*\)|\([N|n][L|l][^\)]*\)|\([K|k][R|r][^\)]*\)|\([E|e][S|s][^\)]*\)'
+    matchs = matchs+findall(checkreg,filename)
     return matchs
 
 def multiVersion(filename):
-    checkreg = '.*[V|v]\d*\.\w*'
+    matchs=[]
+    ## Check if version is between ()
+    checkreg = '\([V|v|R|r]\d+\.\d+.*\)'
+    matchs = matchs+findall(checkreg,filename)
+    if matchs:
+        for match in matchs:
+            filename = filename.replace(match,'')
+    checkreg = '[V|v|R|r]\d+\.\d+'
+    nmatchs = findall(checkreg,filename)
+    if nmatchs:
+        for match in matchs:
+            filename = filename.replace(match,'')
+        matchs = matchs+nmatchs
+    checkreg = '#\d+'
+    matchs = matchs+findall(checkreg,filename)
+    return matchs
+
+def bracketmatch(filename):
+    checkreg = '\[.*\]*'
     matchs = findall(checkreg,filename)
     return matchs
 
@@ -628,7 +648,11 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     vmatchs = multiVersion(tempfile)
     if vmatchs:
         for match in vmatchs:
-            tempfile = tempfile.replace(match,'')
+            try:
+                tempfile = tempfile.replace('('+match+')','')
+                tempfile = tempfile.replace(match,'')
+            except:
+                pass
     logging.info ('###### VERSION MATCH :['+str(vmatchs)+']')
     cmatchs = multiCountry(tempfile)
     if cmatchs:
@@ -636,35 +660,52 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
             tempfile = tempfile.replace(match,'')
     logging.info ('###### COUNTRY MATCH :['+str(cmatchs)+']')
     hmatchs = multiHack(simplefile)
+    logging.info ('###### HACK MATCH :['+str(hmatchs)+']')
     if hmatchs:
         for match in hmatchs:
             tempfile = tempfile.replace(match,'')
-    logging.info ('###### HACK MATCH :['+str(hmatchs)+']')
+    bmatchs = bracketmatch(tempfile)
+    logging.info ('###### BRACKET MATCH :['+str(bmatchs)+']')
     logging.info ('###### FILE ENDED AS :['+str(tempfile)+']')
     try:
         if cmatchs and config['config']['decorators']['country']:
             for cmatch in cmatchs:
-                gameName = gameName+' '+cmatch.replace('_',' ')
+
+                if cmatch.lower() not in gameName.lower():
+                    gameName = gameName+' '+cmatch.replace('_',' ')
     except:
         logging.info ('###### NO COUNTRY SELECTION CONFIGURED')
     try:
         if matchs and config['config']['decorators']['disk']:
             for match in matchs:
-                gameName = gameName+' '+match.replace('_',' ')
+                if match.lower() not in gameName.lower():
+                    gameName = gameName+' '+match.replace('_',' ')
     except:
         logging.info ('###### NO DISK SELECTION CONFIGURED')
     try:
         if vmatchs and config['config']['decorators']['version']:
             for vmatch in vmatchs:
-                gameName = gameName+' '+vmatchs.replace('_',' ')
+                if vmatch.lower() not in gameName.lower():
+                    if "(" not in vmatch:
+                        gameName = gameName+' ('+vmatch.replace('_',' ')+')'
+                    else:
+                        gameName = gameName+' '+vmatch.replace('_',' ')
     except:
         logging.info ('###### NO VERSION SELECTION CONFIGURED')
     try:
         if hmatchs and config['config']['decorators']['hack']:
             for hmatch in hmatchs:
-                gameName = gameName+' '+hmatch.replace('_',' ')+''+filext
+                if hmatch.lower() not in gameName.lower():
+                    gameName = gameName+' '+hmatch.replace('_',' ')+''+filext
     except:
         logging.info ('###### NO HACK SELECTION CONFIGURED')
+    try:
+        if bmatchs and config['config']['decorators']['brackets']:
+            for bmatch in bmatchs:
+                if bmatch.lower() not in gameName.lower():
+                    gameName = gameName+' '+bmatch.replace('_',' ')+''+filext
+    except:
+        logging.info ('###### NO BRACKET SELECTION CONFIGURED')
     q.put(['gamelabel','text',' Game : '+gameName])
     q.put(['gameimage','source',imglocation])
     thisTag = thisTag.replace('$NAME',escape(gameName))
