@@ -639,7 +639,7 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     except:
         gmf =''
     logging.info ('###### GAME NAME FOUND :['+gmf+']')
-    tempfile = 'Zerberk v1.4 (1993-12-05)(Bock, Matthias)(FW)[h BTTR].zip'#simplefile
+    tempfile = simplefile
     matchs = multiDisk(tempfile)
     if matchs:
         for match in matchs:
