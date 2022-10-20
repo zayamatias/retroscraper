@@ -501,7 +501,7 @@ def multiVersion(filename):
     return matchs
 
 def bracketmatch(filename):
-    checkreg = '\[.*\]*'
+    checkreg = '\[.*\]'
     matchs = findall(checkreg,filename)
     return matchs
 
