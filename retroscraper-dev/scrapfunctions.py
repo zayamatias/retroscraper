@@ -639,7 +639,7 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     except:
         gmf =''
     logging.info ('###### GAME NAME FOUND :['+gmf+']')
-    tempfile = simplefile
+    tempfile = 'Zerberk v1.4 (1993-12-05)(Bock, Matthias)(FW)[h BTTR].zip'#simplefile
     matchs = multiDisk(tempfile)
     if matchs:
         for match in matchs:
@@ -696,14 +696,14 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
         if hmatchs and config['config']['decorators']['hack']:
             for hmatch in hmatchs:
                 if hmatch.lower() not in gameName.lower():
-                    gameName = gameName+' '+hmatch.replace('_',' ')+''+filext
+                    gameName = gameName+' '+hmatch.replace('_',' ')
     except:
         logging.info ('###### NO HACK SELECTION CONFIGURED')
     try:
         if bmatchs and config['config']['decorators']['brackets']:
             for bmatch in bmatchs:
                 if bmatch.lower() not in gameName.lower():
-                    gameName = gameName+' '+bmatch.replace('_',' ')+''+filext
+                    gameName = gameName+' '+bmatch.replace('_',' ')
     except:
         logging.info ('###### NO BRACKET SELECTION CONFIGURED')
     q.put(['gamelabel','text',' Game : '+gameName])
