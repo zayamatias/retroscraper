@@ -461,28 +461,28 @@ def loadCompanies(apikey,uuid,thn):
 
 def multiDisk(filename):
     checkreg = '\([P|p][A|a][R|r][T|t][^\)]*\)|\([F|f][I|i][L|l][E|e][^\)]*\)|\([D|d][I|i][S|s][K|k][^\)]*\)|\([S|s][I|i][D|d][E|e][^\)]*\)|\([D|d][I|i][S|s][C|c][^\)]*\)|\([T|t][A|a][P|p][E|e][^\)]*\)'
-    matchs = search(checkreg,filename)
+    matchs = findall(checkreg,filename)
     return matchs
 
 def multiHack(filename):
     checkreg = '\(.*[H|h][A|a][C|c][K|k][^\)]*\)|\([P|p][R|o][T|t][O|o][T|t][Y|y][P|p][E|e][^\)]*\)|\([D|d][E|e][M|m][O|o][^\)]*\)|\([S|s][A|a][M|m][P|p][L|l][E|e][^\)]*\)|\([B|b][E|e][T|t][A|a][^\)]*\)'    
-    matchs = search(checkreg,filename)
+    matchs = findall(checkreg,filename)
     return matchs
 
 def multiCountry(filename):
     checkreg = '\([E|e][U|u][R|r][O|o][P|p][E|e][^\)]*\)|\([U|u][S|s][A|a][^\)]*\)|\([J|j][A|a][P|p][A|a][N|n][^\)]*\)|\([E|e][U|u][R|r][A|a][S|s][I|i][A|a][^\)]*\)'
-    matchs = search(checkreg,filename)
+    matchs = findall(checkreg,filename)
     if not matchs:
         checkreg = '\([S|s][P|p][A|a][I|i][N|n][^\)]*\)|\([F|f][R|r][A|a][N|n][C|c][E|e][^\)]*\)|\([G|g][E|e][R|r][M|m][A|a][N|n][Y|y][^\)]*\)'
-        matchs = search(checkreg,filename)
+        matchs = findall(checkreg,filename)
     if not matchs:
-        checkreg = '\([E|e][N|n][G|g][^\)]*\)|\([R|r][U|u][^\)]*\)|\([E|e][^\)]*\)|\([U|u][^\)]*\)|\([J|j][^\)]*\)|\([S|s][^\)]*\)|\([N|n][^\)]*\)|\([F|f][^\)]*\)|\([J|j][P|p][^\)]*\)|\([N|n][L|l][^\)]*\)|\([K|k][R|r][^\)]*\)|\([E|e][S|s][^\)]*\)'
-        matchs = search(checkreg,filename)
+        checkreg = '\([P|p][A|a][L|l][^\)]*\)|\([N|n][T|t][S|s][C|c][^\)]*\)|\([E|e][N|n][G|g][^\)]*\)|\([R|r][U|u][^\)]*\)|\([E|e][^\)]*\)|\([U|u][^\)]*\)|\([J|j][^\)]*\)|\([S|s][^\)]*\)|\([N|n][^\)]*\)|\([F|f][^\)]*\)|\([J|j][P|p][^\)]*\)|\([N|n][L|l][^\)]*\)|\([K|k][R|r][^\)]*\)|\([E|e][S|s][^\)]*\)'
+        matchs = findall(checkreg,filename)
     return matchs
 
 def multiVersion(filename):
     checkreg = '.*[V|v]\d*\.\w*'
-    matchs = search(checkreg,filename)
+    matchs = findall(checkreg,filename)
     return matchs
 
 def getMediaUrl(mediapath,file,medias,mediaList,logging,thn,regionList=['wor']):
@@ -619,32 +619,50 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
     except:
         gmf =''
     logging.info ('###### GAME NAME FOUND :['+gmf+']')
-    matchs = multiDisk(simplefile)
+    tempfile = simplefile
+    matchs = multiDisk(tempfile)
+    if matchs:
+        for match in matchs:
+            tempfile = tempfile.replace(match,'')
     logging.info ('###### MULTI DISK MATCH :['+str(matchs)+']')
-    vmatchs = multiVersion(simplefile)
+    vmatchs = multiVersion(tempfile)
+    if vmatchs:
+        for match in vmatchs:
+            tempfile = tempfile.replace(match,'')
     logging.info ('###### VERSION MATCH :['+str(vmatchs)+']')
-    cmatchs = multiCountry(simplefile)
+    cmatchs = multiCountry(tempfile)
+    if cmatchs:
+        for match in cmatchs:
+            tempfile = tempfile.replace(match,'')
     logging.info ('###### COUNTRY MATCH :['+str(cmatchs)+']')
     hmatchs = multiHack(simplefile)
+    if hmatchs:
+        for match in hmatchs:
+            tempfile = tempfile.replace(match,'')
     logging.info ('###### HACK MATCH :['+str(hmatchs)+']')
+    logging.info ('###### FILE ENDED AS :['+str(tempfile)+']')
     try:
         if cmatchs and config['config']['decorators']['country']:
-            gameName = gameName+' '+cmatchs.group(0).replace('_',' ')
+            for cmatch in cmatchs:
+                gameName = gameName+' '+cmatch.replace('_',' ')
     except:
         logging.info ('###### NO COUNTRY SELECTION CONFIGURED')
     try:
         if matchs and config['config']['decorators']['disk']:
-            gameName = gameName+' '+matchs.group(0).replace('_',' ')
+            for match in matchs:
+                gameName = gameName+' '+match.replace('_',' ')
     except:
         logging.info ('###### NO DISK SELECTION CONFIGURED')
     try:
         if vmatchs and config['config']['decorators']['version']:
-            gameName = gameName+' '+vmatchs.group(0).replace('_',' ')
+            for vmatch in vmatchs:
+                gameName = gameName+' '+vmatchs.replace('_',' ')
     except:
         logging.info ('###### NO VERSION SELECTION CONFIGURED')
     try:
         if hmatchs and config['config']['decorators']['hack']:
-            gameName = gameName+' '+vmatchs.group(0).replace('_',' ')+''+filext
+            for hmatch in hmatchs:
+                gameName = gameName+' '+hmatch.replace('_',' ')+''+filext
     except:
         logging.info ('###### NO HACK SELECTION CONFIGURED')
     q.put(['gamelabel','text',' Game : '+gameName])
