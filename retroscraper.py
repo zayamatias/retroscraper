@@ -67,16 +67,47 @@ try:
 except Exception as e:
     handleImportError(str(e))
 try:
+    from kivy.config import Config
     from kivy.uix.floatlayout import FloatLayout
     from kivy.properties import ObjectProperty
     from kivy.uix.boxlayout import BoxLayout
     from kivy.app import App
+    import kivy.graphics.cgl_backend.cgl_sdl2
+    import kivy.uix.spinner
+    import kivy.uix.progressbar
+    import kivy.uix.treeview
+    from kivy.factory import Factory
+    from kivy.uix.checkbox import CheckBox
+    from kivy.uix.label import Label
+    from kivy.uix.popup import Popup
+    from kivy.uix.image import AsyncImage
+    from kivy.clock import Clock    
+    from kivy_garden import filebrowser
+    import kivy.uix.splitter
+    import kivy.uix.stacklayout
+    from kivy.metrics import dp
 except Exception as e:
+    print (e)
     handleImportError(str(e))
+    from kivy.config import Config
     from kivy.uix.floatlayout import FloatLayout
     from kivy.properties import ObjectProperty
     from kivy.uix.boxlayout import BoxLayout
     from kivy.app import App
+    import kivy.graphics.cgl_backend.cgl_sdl2
+    import kivy.uix.spinner
+    import kivy.uix.progressbar
+    import kivy.uix.treeview
+    from kivy.factory import Factory
+    from kivy.uix.checkbox import CheckBox
+    from kivy.uix.label import Label
+    from kivy.uix.popup import Popup
+    from kivy.uix.image import AsyncImage
+    from kivy.clock import Clock    
+    from kivy_garden import filebrowser
+    import kivy.uix.splitter
+    import kivy.uix.stacklayout
+    from kivy.metrics import dp
 
 if platform.system().lower().startswith('win'):
     import win32timezone
@@ -878,7 +909,11 @@ if __name__ == '__main__':
         config['config']['nobackup']= argsvals['nobackup']
     except:
         config['config']['nobackup']= False
-    from kivy.resources import resource_add_path, resource_find
+    try:
+        from kivy.resources import resource_add_path, resource_find
+    except Exception as e:
+        handleImportError(str(e))
+        from kivy.resources import resource_add_path, resource_find
     resource_add_path(resourcePath()) 
     if not cli:
         ## We just need to verify if there's an option to run in wndowed mode or not
@@ -888,26 +923,11 @@ if __name__ == '__main__':
             ## I need to verify that an actual desktop is running
             desktop = os.environ.get('DESKTOP_SESSION')
             if desktop == None:
-                print ('It seems you\'re running from a desktopless environment, defaulting to cli mode')
+                print ('It seems you\'re running from akivy desktopless environment, defaulting to cli mode')
                 cli = True
 
     if not cli:
-        import kivy.graphics.cgl_backend.cgl_sdl2
-        import kivy.uix.spinner
-        import kivy.uix.progressbar
-        import kivy.uix.treeview
-        from kivy.factory import Factory
-        from kivy.uix.checkbox import CheckBox
-        from kivy.uix.label import Label
-        from kivy.uix.popup import Popup
-        from kivy.uix.image import AsyncImage
-        from kivy.clock import Clock    
-        from kivy.config import Config
         from kivy.core.window import Window
-        from kivy_garden import filebrowser
-        import kivy.uix.splitter
-        import kivy.uix.stacklayout
-        from kivy.metrics import dp
         Config.set('graphics', 'width', '1200')
         Config.set('graphics', 'height', '750')
         Config.set('graphics', 'resizable', True)
