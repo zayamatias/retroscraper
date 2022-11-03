@@ -7,7 +7,7 @@ RPI binary has been compiled on an actual retropie image (latest version).
 
 You need to install the requirements for you platform before being able to run it from source.
 
-Update: I've updated the initialization of the script so it will perform the installation of most of the dependencies itself. It seems that Rust is a prerequiste for the 'paramiko' module, this will also be installed but it will need some interaction from yourself, more specifically if running the script on a RPI, it takes some time, so be patient. Overall, first run when instaling most dependencies can take some time.
+Update: I've updated the initialization of the script so it will perform the installation of most of the dependencies itself. It seems that Rust is a prerequiste for the 'paramiko' module, this will also be installed but it will need some interaction from yourself, more specifically if running the script on a RPI, it takes some time, so be patient. Overall, first run when instaling most dependencies can take some time.If it does not run at first launch, try again.
 
 If you're running on other platform than linux/macOS, I'd recommend you first install Rust: https://www.rust-lang.org/tools/install
 
