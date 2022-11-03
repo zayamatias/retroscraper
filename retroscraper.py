@@ -72,42 +72,14 @@ try:
     from kivy.properties import ObjectProperty
     from kivy.uix.boxlayout import BoxLayout
     from kivy.app import App
-    import kivy.graphics.cgl_backend.cgl_sdl2
-    import kivy.uix.spinner
-    import kivy.uix.progressbar
-    import kivy.uix.treeview
-    from kivy.factory import Factory
-    from kivy.uix.checkbox import CheckBox
-    from kivy.uix.label import Label
-    from kivy.uix.popup import Popup
-    from kivy.uix.image import AsyncImage
-    from kivy.clock import Clock    
-    from kivy_garden import filebrowser
-    import kivy.uix.splitter
-    import kivy.uix.stacklayout
-    from kivy.metrics import dp
+
 except Exception as e:
-    print (e)
     handleImportError(str(e))
     from kivy.config import Config
     from kivy.uix.floatlayout import FloatLayout
     from kivy.properties import ObjectProperty
     from kivy.uix.boxlayout import BoxLayout
     from kivy.app import App
-    import kivy.graphics.cgl_backend.cgl_sdl2
-    import kivy.uix.spinner
-    import kivy.uix.progressbar
-    import kivy.uix.treeview
-    from kivy.factory import Factory
-    from kivy.uix.checkbox import CheckBox
-    from kivy.uix.label import Label
-    from kivy.uix.popup import Popup
-    from kivy.uix.image import AsyncImage
-    from kivy.clock import Clock    
-    from kivy_garden import filebrowser
-    import kivy.uix.splitter
-    import kivy.uix.stacklayout
-    from kivy.metrics import dp
 
 if platform.system().lower().startswith('win'):
     import win32timezone
@@ -927,6 +899,20 @@ if __name__ == '__main__':
                 cli = True
 
     if not cli:
+        import kivy.graphics.cgl_backend.cgl_sdl2
+        import kivy.uix.spinner
+        import kivy.uix.progressbar
+        import kivy.uix.treeview
+        from kivy.factory import Factory
+        from kivy.uix.checkbox import CheckBox
+        from kivy.uix.label import Label
+        from kivy.uix.popup import Popup
+        from kivy.uix.image import AsyncImage
+        from kivy.clock import Clock    
+        from kivy_garden import filebrowser
+        import kivy.uix.splitter
+        import kivy.uix.stacklayout
+        from kivy.metrics import dp
         from kivy.core.window import Window
         Config.set('graphics', 'width', '1200')
         Config.set('graphics', 'height', '750')
