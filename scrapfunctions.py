@@ -1,10 +1,15 @@
+from importfunctions import handleImportError
 from dataclasses import replace
 import logging
 from re import findall,sub,search
 import uuid
 from xml.sax.saxutils import escape
 from sys import exit as sysexit
-from numpy import save
+try:
+    from numpy import save
+except Exception as e:
+    handleImportError(str(e))
+    from numpy import save
 from checksums import getChecksums
 from shutil import copyfile,rmtree
 import apicalls
@@ -17,7 +22,11 @@ import xml.etree.ElementTree as ET
 from queue import Queue
 from threading import Thread
 from time import sleep
-from googletrans import Translator
+try:
+    from googletrans import Translator
+except Exception as e:
+    handleImportError(str(e))
+    from googletrans import Translator
 from pathlib import Path as Path
 import remote
 import os

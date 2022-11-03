@@ -1,6 +1,11 @@
+from importfunctions import handleImportError
 import apicalls
 import re
-from bs4 import BeautifulSoup
+try:
+    from bs4 import BeautifulSoup
+except Exception as e:
+    handleImportError(str(e))
+    from bs4 import BeautifulSoup
 from urllib import parse
 
 def getFileFromIA(URL,filename,queue):

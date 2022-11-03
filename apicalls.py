@@ -1,22 +1,30 @@
-import logging
-import requests
-from requests import exceptions as requestsexceptions
-from requests import Response as requestsResponse
-import shutil
-from PIL import Image
-from io import BytesIO
-import platform
-from pathlib import Path
-import os
-import sys
 import json
+import logging
+import os
+import platform
+import shutil
+import sys
 from http.client import HTTPConnection
-from requests.models import Response as reqResponse
-from bs4 import BeautifulSoup
+from io import BytesIO
+from pathlib import Path
 from urllib import parse
+from retroscraper import handleImportError
 import remote
+import requests
+try:
+    from bs4 import BeautifulSoup
+except Exception as e:
+    handleImportError(str(e))
+    from bs4 import BeautifulSoup
+try:
+    from PIL import Image
+except Exception as e:
+    handleImportError(str(e))
+    from PIL import Image
 
-
+from requests import Response as requestsResponse
+from requests import exceptions as requestsexceptions
+from requests.models import Response as reqResponse
 
 
 def backendURL():

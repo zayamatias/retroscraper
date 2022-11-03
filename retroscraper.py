@@ -1,47 +1,82 @@
-from curses.textpad import Textbox, rectangle
-from platform import system
 import os
+import sys
+from importfunctions import handleImportError
+import argparse
+
 os.environ["KIVY_NO_CONSOLELOG"] = "1"
-os.environ["KCFG_KIVY_LOG_LEVEL"] = "error"
+os.environ["KCFG_KIVY_LOG_LEVEL"] = "debug"
 os.environ["KIVY_NO_ARGS"] = "1"
 os.environ["KIVY_TEXT"] = "sdl2"
-import kivy.graphics.cgl_backend.cgl_sdl2
-import kivy.uix.spinner
-import kivy.uix.progressbar
-import kivy.uix.treeview
-from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import ObjectProperty
-from kivy.factory import Factory
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.checkbox import CheckBox
-from kivy.uix.label import Label
-from kivy.uix.popup import Popup
-from kivy.uix.image import AsyncImage
 import scrapfunctions
-from threading import Thread
-from queue import Queue
-from kivy.clock import Clock    
 from sys import exit as sysexit
-import sys
-import argparse
-import curses
-from time import sleep
-from random import randint,randrange
-from signal import signal,SIGINT
-import logging
-import apicalls
-from kivy.config import Config
-from math import ceil
-from kivy.core.window import Window
-from kivy.resources import resource_add_path, resource_find
-from kivy_garden import filebrowser
-import kivy.uix.splitter
-import kivy.uix.stacklayout
-import platform
-from kivy.metrics import dp
-import remote
-from pathlib import Path as sysPath
+
+try:
+    from curses.textpad import Textbox, rectangle
+except Exception as e:
+    handleImportError(str(e))
+try:
+    from platform import system
+except Exception as e:
+    handleImportError(str(e))
+try:
+    from threading import Thread
+except Exception as e:
+    handleImportError(str(e))
+try:
+    from queue import Queue
+except Exception as e:
+    handleImportError(str(e))
+try:
+    import curses
+except Exception as e:
+    handleImportError(str(e))
+try:
+    from time import sleep
+except Exception as e:
+    handleImportError(str(e))
+try:
+    from random import randint,randrange
+except Exception as e:
+    handleImportError(str(e))
+try:
+    from signal import signal,SIGINT
+except Exception as e:
+    handleImportError(str(e))
+try:
+    import logging
+except Exception as e:
+    handleImportError(str(e))
+try:
+    import apicalls
+except Exception as e:
+    handleImportError(str(e))
+try:
+    from math import ceil
+except Exception as e:
+    handleImportError(str(e))
+try:
+    import platform
+except Exception as e:
+    handleImportError(str(e))
+try:
+    import remote
+except Exception as e:
+    handleImportError(str(e))
+try:
+    from pathlib import Path as sysPath
+except Exception as e:
+    handleImportError(str(e))
+try:
+    from kivy.uix.floatlayout import FloatLayout
+    from kivy.properties import ObjectProperty
+    from kivy.uix.boxlayout import BoxLayout
+    from kivy.app import App
+except Exception as e:
+    handleImportError(str(e))
+    from kivy.uix.floatlayout import FloatLayout
+    from kivy.properties import ObjectProperty
+    from kivy.uix.boxlayout import BoxLayout
+    from kivy.app import App
 
 if platform.system().lower().startswith('win'):
     import win32timezone
@@ -751,6 +786,7 @@ if __name__ == '__main__':
     parser.add_argument('--disk', help='Add disk decorator from filename [Sonic (disk 1/2)]',action='store_true')
     parser.add_argument('--version', help='Add version decorator from filename [Sonic V1.10]',action='store_true')
     parser.add_argument('--hack', help='Add hack decorator from filename [Sonic (madhedgehog hack)]',action='store_true')
+    parser.add_argument('--brackets', help='Add brackets decorator from filename (Sonic [TT])',action='store_true')
     parser.add_argument('--bezels', help='Download bezels for games',action='store_true')
     parser.add_argument('--sysbezels', help='Download system bezel if game bezel is not found',action='store_true')
     parser.add_argument('--cleanmedia', help='Clean media directroies before downloading',action='store_true')
@@ -802,6 +838,10 @@ if __name__ == '__main__':
     except:
         config['config']['decorators']['hack']= False
     try:
+        config['config']['decorators']['brackets']= argsvals['brackets']
+    except:
+        config['config']['decorators']['brackets']= False
+    try:
         config['config']['usegoogle']= argsvals['google']
     except:
         config['config']['usegoogle']= False
@@ -838,6 +878,7 @@ if __name__ == '__main__':
         config['config']['nobackup']= argsvals['nobackup']
     except:
         config['config']['nobackup']= False
+    from kivy.resources import resource_add_path, resource_find
     resource_add_path(resourcePath()) 
     if not cli:
         ## We just need to verify if there's an option to run in wndowed mode or not
@@ -851,6 +892,22 @@ if __name__ == '__main__':
                 cli = True
 
     if not cli:
+        import kivy.graphics.cgl_backend.cgl_sdl2
+        import kivy.uix.spinner
+        import kivy.uix.progressbar
+        import kivy.uix.treeview
+        from kivy.factory import Factory
+        from kivy.uix.checkbox import CheckBox
+        from kivy.uix.label import Label
+        from kivy.uix.popup import Popup
+        from kivy.uix.image import AsyncImage
+        from kivy.clock import Clock    
+        from kivy.config import Config
+        from kivy.core.window import Window
+        from kivy_garden import filebrowser
+        import kivy.uix.splitter
+        import kivy.uix.stacklayout
+        from kivy.metrics import dp
         Config.set('graphics', 'width', '1200')
         Config.set('graphics', 'height', '750')
         Config.set('graphics', 'resizable', True)

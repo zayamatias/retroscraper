@@ -1,17 +1,28 @@
-import netifaces
+from importfunctions import handleImportError
+import logging
+import os
 import socket
+import sys
+from pathlib import Path as Path
 from queue import Queue
 from threading import Thread
 from time import sleep
-import paramiko
-import logging
-from smb.SMBConnection import SMBConnection
+try:
+    import netifaces
+except Exception as e:
+    handleImportError(str(e))
+    import netifaces
+try:
+    import paramiko
+except Exception as e:
+    handleImportError(str(e))
+    import paramiko
+try:
+    from smb.SMBConnection import SMBConnection
+except Exception as e:
+    handleImportError(str(e))
+    from smb.SMBConnection import SMBConnection
 import apicalls
-from pathlib import Path as Path
-import sys
-import os
-
-
 
 '''
 def OpenFile(filename,mode,logging,thn):
