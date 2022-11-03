@@ -4,7 +4,7 @@ from importfunctions import handleImportError
 import argparse
 
 os.environ["KIVY_NO_CONSOLELOG"] = "1"
-os.environ["KCFG_KIVY_LOG_LEVEL"] = "debug"
+os.environ["KCFG_KIVY_LOG_LEVEL"] = "error"
 os.environ["KIVY_NO_ARGS"] = "1"
 os.environ["KIVY_TEXT"] = "sdl2"
 import scrapfunctions
