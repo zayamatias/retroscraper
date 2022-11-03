@@ -9,6 +9,8 @@ You need to install the requirements for you platform before being able to run i
 
 Update: I've updated the initialization of the script so it will perform the installation of most of the dependencies itself. It seems that Rust is a prerequiste for the 'paramiko' module, this will also be installed but it will need some interaction from yourself, more specifically if running the script on a RPI, it takes some time, so be patient. Overall, first run when instaling most dependencies can take some time.
 
+If you're running on other platform than linux/macOS, I'd recommend you first install Rust: https://www.rust-lang.org/tools/install
+
 This scraper uses its own backend, which has been compiled from many sources on the net and keeps extending. If this is a problem for you, do not run this software.
 
 This scraper will create a local DB with the checksum of your roms, for purposes of speed if you have large files. If this is a problem for you, use the --nodb modifier.
