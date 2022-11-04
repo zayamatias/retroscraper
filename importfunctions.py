@@ -42,9 +42,9 @@ def handleImportError(error):
         return
     if 'kivy' in error.lower():
         print ('Installing kivy, please wait')
+        subprocess.call([sys.executable,'-m','pip','install','kivy-deps.gstreamer'])
         subprocess.call([sys.executable,'-m','pip','install','kivy'])
         subprocess.call([sys.executable,'-m','pip','install','kivy-garden.filebrowser'])
-        subprocess.call([sys.executable,'-m','pip','install','kivy-deps.gstreamer'])
         return
     if 'googletrans' in error.lower():
         print ('Installing googletrans, please wait')
