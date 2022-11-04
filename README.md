@@ -1,13 +1,9 @@
 # RetroScraper
 RetroScraper - Metadata &amp; Media scraper for your rom collection 
 
-Runs and has been tested under python 3.9 & 3.7, I've tested it under windows, linux and rpi distrubutions, but of course, errors will still occur.
+Tested under python 3.10,3.9 & 3.7, I've tested it under windows, linux and rpi distrubutions, but of course, errors will still occur.
 
-RPI binary has been compiled on an actual retropie image (latest version).
-
-You need to install the requirements for you platform before being able to run it from source.
-
-I've updated the initialization of the script so it will perform the installation of most of the dependencies itself. It seems that Rust is a prerequiste for the 'paramiko' module, this will also be installed but it will need some interaction from yourself, more specifically if running the script on a RPI, it takes some time, so be patient. Overall, first run when instaling most dependencies can take some time.If it does not run at first launch, try again.
+I've updated the initialization of the script so it will perform the installation of most of the dependencies itself.
 
 This scraper uses its own backend, which has been compiled from many sources on the net and keeps extending. If this is a problem for you, do not run this software.
 
@@ -16,8 +12,6 @@ This scraper will create a local DB with the checksum of your roms, for purposes
 It will create a backup of the gamelist.xml files by default, use the --nobackup modifier to overwrite them directly.
 
 ## Running the software:
-
-### From source:
 
 Download all files in one directory. (you can use git clone also :  git clone https://github.com/zayamatias/retroscraper)
 
