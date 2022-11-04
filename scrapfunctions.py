@@ -639,7 +639,7 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
         logging.info ('==================================##### PROCESSNG BEZEL THREAD['+str(thn)+']')
         logging.info ('##### URL='+str(bezelURL)+' THREAD['+str(thn)+']')
         logging.info ('###### DESTBEZEL = '+str(destbezel)+' THREAD['+str(thn)+']')
-        processBezels(bezelURL,destbezel,apikey,uuid,file,system['path'],logging,thn,cli)
+        processBezels(config,bezelURL,destbezel,apikey,uuid,file,system['path'],logging,thn,cli)
     thisTag = thisTag.replace('$PATH',normalizeFileName(file))
     logging.info ('###### GAME NAMES FOUND :['+str(result['game']['names'])+']')
     gameName = result['game']['names'][0]['text']
