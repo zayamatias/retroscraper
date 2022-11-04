@@ -8,7 +8,7 @@ import logging
 import remote
 
 
-def getRemoteChksums(filepath,logging,thn):
+def getRemoteChksums(config,filepath,logging,thn):
     if 'ssh://' in filepath:
         ip,chkfile = remote.getFileBits(filepath,'ssh://',thn)
         chkfile=chkfile.replace('$','\$')
@@ -39,7 +39,7 @@ def getRemoteChksums(filepath,logging,thn):
         crc = crc.replace('\n','')
         return sha1.split(' ')[0].upper(),md5.split(' ')[0].upper(),crc.split(' ')[0].upper()
 
-def calculate(file,logging,thn):
+def calculate(config,file,logging,thn):
     if not remote.testPathIsRemote(file,logging,thn):
         try:
             showfile = file.encode('utf-8').decode()
@@ -72,10 +72,10 @@ def calculate(file,logging,thn):
         return rsha1,rmd5,rcrc
     else:
         logging.info ('###### THIS IS A REMOT FILE, I\'LL GET THE REMOTE WAY THREAD['+str(thn)+']')
-        return getRemoteChksums(file,logging,thn)
+        return getRemoteChksums(config,file,logging,thn)
 
 
-def getfromDB(file,logging,thn):
+def getfromDB(config,file,logging,thn):
     rsha1=''
     rmd5=''
     rcrc=''
@@ -118,7 +118,7 @@ def getfromDB(file,logging,thn):
             logging.info ('###### ERROR CREATING EMPTY INSTANCE OF DB '+str(e)+'THREAD['+str(thn)+']')
     if rsha1=='' or rmd5=='' or rcrc=='':
         logging.info ('###### THERE WAS NO SHA IN DB SO I CALCULATE IT THREAD['+str(thn)+']')
-        rsha1, rmd5, rcrc = calculate(file,logging,thn)
+        rsha1, rmd5, rcrc = calculate(config,file,logging,thn)
         if rsha1!='':
             sql = 'REPLACE INTO CSUMS (filename,sha1,md5,crc) VALUES (?,?,?,?)'
             try:
@@ -150,12 +150,12 @@ def getChecksums(file,config,logging,thn):
     try:
         if not config['config']['nodb']:
             logging.info ('###### GETTING FROM DB THREAD['+str(thn)+']')
-            sha1, md5, crc = getfromDB(file,logging,thn)
+            sha1, md5, crc = getfromDB(config,file,logging,thn)
         else:
             logging.info ('###### CALCULATING THREAD['+str(thn)+']')
-            sha1, md5, crc = calculate(file,logging,thn)
+            sha1, md5, crc = calculate(config,file,logging,thn)
         return sha1,md5,crc
     except Exception as e:
         logging.error ('###### ERROR IN CHECKSUMS '+str(e)+'THREAD['+str(thn)+']')
-        sha1, md5, crc = getfromDB(file,logging,thn)
+        sha1, md5, crc = getfromDB(config,file,logging,thn)
         return sha1,md5,crc
