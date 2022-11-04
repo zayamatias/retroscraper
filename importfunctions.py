@@ -3,7 +3,7 @@ import subprocess
 
 def handleImportError(error):
     print ('Upgrading pip')
-    result = subprocess.call([sys.executable,'-m','pip','install','--upgrade','pip'])
+    result = subprocess.call([sys.executable,'-m','pip','install','--upgrade','pip','wheels','setuptools'])
     if result !=0:
         print ('If pip is not installed pls folow these instructions https://pip.pypa.io/en/stable/installation/')
         sys.exit()    
