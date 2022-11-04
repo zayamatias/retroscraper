@@ -42,7 +42,6 @@ def handleImportError(error):
         return
     if 'kivy' in error.lower():
         print ('Installing kivy, please wait')
-        subprocess.call([sys.executable,'-m','pip','install','kivy-deps.gstreamer'])
         subprocess.call([sys.executable,'-m','pip','install','kivy'])
         subprocess.call([sys.executable,'-m','pip','install','kivy-garden.filebrowser'])
         return
@@ -53,6 +52,10 @@ def handleImportError(error):
     if '_curses' in error.lower():
         print ('Installing curses for Windows, please wait')
         subprocess.call([sys.executable,'-m','pip','install','windows-curses'])
+        return
+    if 'PIL' in error.lower():
+        print ('Installing Pillow, please wait')
+        subprocess.call([sys.executable,'-m','pip','install','pillow'])
         return
     else:
         print ('There seems to be a module which has not be installed:')
