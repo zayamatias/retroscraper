@@ -263,11 +263,9 @@ def getNetInfo():
     #addr = netifaces.ifaddresses(iface)
     for iface in ifaces:
         for ip in iface.ips:
-            if ('.' in ip.ip) and ('lo' not in ip.nice_name):
-                print (ip)
-    sys.exit()
-    return myip,snet
-
+            if ('.' in ip.ip) and ('127.0' not in ip.ip):
+                return ip.ip,ip.network_prefix
+    
 def testPort(ip,port,thrn,tq,sq):
     socket.setdefaulttimeout(5)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
