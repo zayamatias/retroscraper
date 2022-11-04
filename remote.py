@@ -34,10 +34,10 @@ def OpenFile(filename,mode,logging,thn):
         fileHnd=open(filename,mode)
     return fileHnd
 '''
-def remotePathExists(path,ip,logging,thn):
+def remotePathExists(config,path,ip,logging,thn):
     logging.info ('###### CHECKING IF REMOTE PATH EXISTS THREAD['+str(thn)+']')
     logging.info ('###### GOING TO CONNECT TO IP '+str(ip)+' IN THREAD ['+str(thn)+']')
-    pmsshClient = buildSSHClient(ip,logging,thn)
+    pmsshClient = buildSSHClient(config,ip,logging,thn)
     try:
         ftp_client=pmsshClient.open_sftp()
         ftp_client.chdir(path)
@@ -48,7 +48,7 @@ def remotePathExists(path,ip,logging,thn):
         pmsshClient.close()
         return False
 
-def buildSSHClient(ip,logging,thn):
+def buildSSHClient(config,ip,logging,thn):
     logging.info ('###### BULIDING SSH CLIENT IN THREAD['+str(thn)+']')
     pmsshClient = paramiko.SSHClient()
     logging.info ('###### CLIENT IS CREATED IN THREAD ['+str(thn)+']')
@@ -57,10 +57,12 @@ def buildSSHClient(ip,logging,thn):
     logging.info ('###### CLIENT SET MISSING KEY POLICY IN THREAD ['+str(thn)+']')
     logging.info ('###### CLIENT CONNECTING IN THREAD ['+str(thn)+']')
     try:
-        pmsshClient.connect(ip, port=22, username='pi',password='raspberry')
+        pmsshClient.connect(ip, port=22, username=config['config']['remoteuser'],password=config['config']['remotepass'])
         logging.info ('###### CLIENT CONNECTED IN THREAD ['+str(thn)+']')
     except Exception as e:
         logging.error ('###### CANNOT CONNECT TO REMOTE SERVER ['+str(ip)+'] VIA SSH ['+str(e)+']  IN THREAD ['+str(thn)+']')
+        print ('Cannot connect to remote server, plese check credentials')
+        sys.exit()
         pmsshClient = None
     return pmsshClient
 
@@ -78,25 +80,25 @@ def testPathIsRemote(mypath,logging,thn):
         return False
 
 
-def makeDirSSH(ip,path,thn,logging):
+def makeDirSSH(config,ip,path,thn,logging):
     cmd = 'mkdir -p \''+path+'\''
     logging.info('###### GOING TO CREATE REMOTE DIR SSH '+path+' WITH COMMAND '+cmd+' IN THREAD ['+str(thn)+']')
-    runRemoteCommand(ip,cmd,thn,logging)
+    runRemoteCommand(config,ip,cmd,thn,logging)
 
 
 def makeDirSMB(ip,path,thn,logging):
     return
 
 
-def makeRemoteDir(path,thn,logging):
+def makeRemoteDir(config,path,thn,logging):
     if 'ssh:' in path:
         logging.info('###### GOING TO CREATE REMOTE SSH DIR '+path+' IN THREAD ['+str(thn)+']')
         ip,path = getFileBits(path,'ssh://',thn)
-        makeDirSSH (ip,path,thn,logging)
+        makeDirSSH (config,ip,path,thn,logging)
     if 'smb:' in path:
         logging.info('###### GOING TO CREATE REMOTE SMB DIR '+path+' IN THREAD ['+str(thn)+']')
         ip,path = getFileBits(path,'smb://',thn)
-        makeDirSMB (ip,path,thn,logging)
+        makeDirSMB (config,ip,path,thn,logging)
 
 
 def getFileBits(filepath,typeremote,thn):
@@ -105,12 +107,12 @@ def getFileBits(filepath,typeremote,thn):
     path = part [part.index('/'):]
     return ip,path
 
-def copyToRemote (orig,dest,thn,logging):
+def copyToRemote (config,orig,dest,thn,logging):
     if 'ssh://' in dest:
         logging.info ('###### COPYING LOCAL FILE '+orig+' TO SSH DESTINATION '+dest+' THREAD['+str(thn)+'}')
         ip,destpath = getFileBits(dest,'ssh://',thn)
         logging.info ('###### GOING TO CONNECT TO IP '+str(ip)+' IN THREAD ['+str(thn)+']')
-        pmsshClient = buildSSHClient(ip,logging,thn)
+        pmsshClient = buildSSHClient(config,ip,logging,thn)
         retries = 10
         success = False
         while not success and retries >0:
@@ -139,9 +141,9 @@ def copyToRemote (orig,dest,thn,logging):
         logging.info ('###### COPYING LOCAL FILE '+orig+' TO SMB DESTINATION '+dest+' THREAD['+str(thn)+'}')
     return
 
-def runRemoteCommand(ip,command,thn,logging):
+def runRemoteCommand(config,ip,command,thn,logging):
     logging.info ('###### GOING TO CONNECT TO IP '+str(ip)+' IN THREAD ['+str(thn)+']')
-    pmsshClient = buildSSHClient(ip,logging,thn)
+    pmsshClient = buildSSHClient(config,ip,logging,thn)
     logging.info ('###### EXECUTING REMOTE '+str(command)+' THREAD['+str(thn)+']')
     success = False
     retries = 10
@@ -154,7 +156,7 @@ def runRemoteCommand(ip,command,thn,logging):
         except Exception as e:
             logging.error ('###### COULD NOT EXECUTE REMOTE COMMAND '+command+' ERRROR '+str(e)+' IN THREAD ['+str(thn)+']')
             if not pmsshClient:
-                pmsshClient = buildSSHClient(ip,logging,thn)
+                pmsshClient = buildSSHClient(config,ip,logging,thn)
             retries = retries -1
     if retries == 0:
         logging.error ('###### COULD NOT EXECUTE REMOTE COMMAND '+command+' IN THREAD ['+str(thn)+']')
@@ -173,11 +175,11 @@ def runRemoteCommand(ip,command,thn,logging):
         pmsshClient.close()
     return cmd_output
 
-def listRemoteDir(path,logging,thn):
+def listRemoteDir(config,path,logging,thn):
     myfiles =[]
     if 'ssh:' in path:
         ip,chpath = getFileBits(path,'ssh://',thn)
-        tmpfiles = listRemoteDirSSH(ip,chpath,thn,logging)
+        tmpfiles = listRemoteDirSSH(config,ip,chpath,thn,logging)
         for tfile in tmpfiles:
             myfiles.append('ssh://'+ip+tfile)
 
@@ -187,21 +189,21 @@ def listRemoteDir(path,logging,thn):
     if myfiles:
         return myfiles
 
-def listRemoteDirSSH (ip,path,thn,logging):
-    tmpfiles = runRemoteCommand (ip,'find \''+path+'\' -maxdepth 1 -type f',thn,logging)
+def listRemoteDirSSH (config,ip,path,thn,logging):
+    tmpfiles = runRemoteCommand (config,ip,'find \''+path+'\' -maxdepth 1 -type f',thn,logging)
     tmpfileslist = tmpfiles.split('\n')
     del tmpfileslist[-1]
     return tmpfileslist
 
-def listRemoteDirSMB (ip,path,logging):
-    return runRemoteCommand (ip,'ls -1 '+path,logging)
+def listRemoteDirSMB (config,ip,path,logging):
+    return runRemoteCommand (config,ip,'ls -1 '+path,logging)
 
 
-def getRemoteEsConfig(ip,logging,thn):
+def getRemoteEsConfig(config,ip,logging,thn):
     destconfig = str(Path.home())+'/.retroscraper/es_systems.cfg'    
     logging.info ('###### GOING TO DO CONFIG READ')
     ## try via ssh
-    myconfig = runRemoteCommand(ip,'cat /etc/emulationstation/es_systems.cfg',thn,logging)
+    myconfig = runRemoteCommand(config,ip,'cat /etc/emulationstation/es_systems.cfg',thn,logging)
     ## To skip SSH
     ## myconfig = None
     if myconfig:
@@ -247,10 +249,8 @@ def checkEsIsPresent(ip,logging):
         conn.connect(ip)
         test = False
         for share in conn.listShares():
-            print (share)
             if 'roms' == share.name.lower():
                 test = True
-        print (test)
     except Exception as e:
         logging.error('###### EXCEPTION WHEN FINDING SHARES ['+str(e)+']')
     return test

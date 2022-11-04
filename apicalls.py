@@ -98,7 +98,7 @@ def getSystemsExtensions(sysname):
             pass
     return '.zip .ZIP .7z .7Z'
 
-def getImageAPI(url,destfile,apikey,uuid,thn,toi,cli,logging,force=False):
+def getImageAPI(config,url,destfile,apikey,uuid,thn,toi,cli,logging,force=False):
     remotefile =''
     if remote.testPathIsRemote(destfile,logging,thn):
         ### THIS IS A REMOTE DESTINATION, NEED TO FIRST DOWNLOAD A TEMP FILE AND THEN COPY
@@ -129,7 +129,7 @@ def getImageAPI(url,destfile,apikey,uuid,thn,toi,cli,logging,force=False):
                         result = shutil.copyfileobj(r.raw, f)
                         logging.info ('###### CREATED IMAGE '+destfile+' WITH RESULT '+str(result)+' IN THREAD ['+str(thn)+']')
                         if remotefile !='':
-                            remote.copyToRemote(destfile,remotefile,thn,logging)
+                            remote.copyToRemote(config,destfile,remotefile,thn,logging)
                             try:
                                 logging.info ('###### GOING TO REMOVE '+destfile+' IN THREAD ['+str(thn)+']')
                                 if cli or not ('tmpss' in destfile):

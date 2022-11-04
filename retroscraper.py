@@ -11,10 +11,6 @@ import scrapfunctions
 from sys import exit as sysexit
 
 try:
-    from curses.textpad import Textbox, rectangle
-except Exception as e:
-    handleImportError(str(e))
-try:
     from platform import system
 except Exception as e:
     handleImportError(str(e))
@@ -28,6 +24,11 @@ except Exception as e:
     handleImportError(str(e))
 try:
     import curses
+except Exception as e:
+    handleImportError(str(e))
+    import curses
+try:
+    from curses.textpad import Textbox, rectangle
 except Exception as e:
     handleImportError(str(e))
 try:
@@ -794,7 +795,7 @@ if __name__ == '__main__':
     parser.add_argument('--sysbezels', help='Download system bezel if game bezel is not found',action='store_true')
     parser.add_argument('--cleanmedia', help='Clean media directroies before downloading',action='store_true')
     parser.add_argument('--linkmedia', help='Creat media links to save space (only in Linux/RPI)',action='store_true')
-    parser.add_argument('--remote', help='Scan a remote RetroPie intsallation',action='store_true')
+    parser.add_argument('--remote', help='Scan a remote RetroPie intsallation add USER and PASSWORD (--remote USER PASSWD)',nargs=2)
     parser.add_argument('--systems', help='List of systems to scan (comma separated values)',nargs=1)
     try:
         args = parser.parse_args()
@@ -812,8 +813,12 @@ if __name__ == '__main__':
     except:
         cli = False    
     try:
-        remotesys = argsvals['remote']
+        config['config']['remoteuser']= argsvals['remote'][0]
+        config['config']['remotepass']= argsvals['remote'][1]
+        remotesys = True
     except:
+        config['config']['remoteuser']= ''
+        config['config']['remotepass']= ''
         remotesys = False    
     try:
         silent = argsvals['silent']
@@ -947,7 +952,7 @@ if __name__ == '__main__':
             iplist = remote.scan (logging)
             if iplist:
                 print ('Found at least one!')
-                config['config']['SystemsFile']=remote.getRemoteEsConfig(iplist[0],logging,'MAIN')
+                config['config']['SystemsFile']=remote.getRemoteEsConfig(config,iplist[0],logging,'MAIN')
             else:
                 print ('No remote systems were found!! Quitting!')
                 sysexit()

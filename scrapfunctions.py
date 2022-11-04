@@ -31,13 +31,13 @@ from pathlib import Path as Path
 import remote
 import os
 
-def pathExists(path,logging,thn):
+def pathExists(config,path,logging,thn):
     if remote.testPathIsRemote(path,logging,thn):
         if 'ssh://' in path:
             ip,spath = remote.getFileBits(path,'ssh://',thn)
         if 'smb://' in path:
             ip,spath = remote.getFileBits(path,'smb://',thn)
-        return remote.remotePathExists(path,ip,logging,thn)
+        return remote.remotePathExists(config,path,ip,logging,thn)
     else:
         return ospath.isdir(path)
     
@@ -52,10 +52,10 @@ def normalizeFileName(fname):
     return escape (fname)
 
 
-def makedir (path,logging,thn):
+def makedir (config,path,logging,thn):
     if remote.testPathIsRemote(path,logging,thn):
         logging.info('###### GOING TO CREATE REMOTE DIR '+path+' IN THREAD ['+str(thn)+']')
-        remote.makeRemoteDir(path,thn,logging)
+        remote.makeRemoteDir(config,path,thn,logging)
         logging.info('###### CREATED REMOTE DIR '+path+' IN THREAD ['+str(thn)+']')
     else:
         logging.info('###### GOING TO CREATE LOCAL DIR '+path+' IN THREAD ['+str(thn)+']')
@@ -287,7 +287,7 @@ def saveConfig(config,q):
         return config
     return
 
-def processBezels(bezelURL, destbezel, apikey, uuid,filename,path,logging,thn,cli):
+def processBezels(config,bezelURL, destbezel, apikey, uuid,filename,path,logging,thn,cli):
     try:
         sfn=filename.encode().decode('utf-8')
     except:
@@ -299,7 +299,7 @@ def processBezels(bezelURL, destbezel, apikey, uuid,filename,path,logging,thn,cl
     path = path.replace('\\','/')
     filename = filename.replace('\\','/')
     bezeldir = destbezel[:destbezel.rindex('/')]
-    apicalls.getImageAPI(bezelURL,destbezel,apikey,uuid,thn,'bezel',cli,logging)
+    apicalls.getImageAPI(config,bezelURL,destbezel,apikey,uuid,thn,'bezel',cli,logging)
     zipname = filename[filename.rfind('/')+1:]
     try:
         szname = zipname.encode().decode('utf-8')
@@ -370,8 +370,8 @@ def processBezels(bezelURL, destbezel, apikey, uuid,filename,path,logging,thn,cl
     if isremote:
         ## MOVE TEMPORARY FILES TO REMOTE LOCATION
         logging.info ('###### COPYING BEZELS TO REMOTE LOCATION IN THREAD ['+str(thn)+']')
-        remote.copyToRemote(bezelcfg,rbezelcfg,thn,logging)
-        remote.copyToRemote(romcfgpath,rromcfgpath,thn,logging)
+        remote.copyToRemote(config,bezelcfg,rbezelcfg,thn,logging)
+        remote.copyToRemote(config,romcfgpath,rromcfgpath,thn,logging)
         logging.info ('###### COPIED BEZELS TO REMOTE LOCATION IN THREAD ['+str(thn)+']')
         if ospath.isfile(bezelcfg):
            remove(bezelcfg)
@@ -622,17 +622,17 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
         bezelURL,destbezel = getMediaUrl(system['path'].replace('/roms/','/overlays/')+'bezels/','system_bezel-'+str(gsysid),sysmedias,['bezel-16-9'],logging,thn,['wor','default'])
     logging.info ('++++++++++++++++ BACK FROM BEZELS THREAD['+str(thn)+']')
     if imageURL !='':
-        imglocation = apicalls.getImageAPI(imageURL,destimage,apikey,uuid,thn,'ss',cli,logging)
+        imglocation = apicalls.getImageAPI(config,imageURL,destimage,apikey,uuid,thn,'ss',cli,logging)
         if not imglocation:
             destimage =''
     else:
         imglocation = ''
     if videoURL !='':
-        success = apicalls.getImageAPI(videoURL,destvideo,apikey,uuid,thn,'video',cli,logging)
+        success = apicalls.getImageAPI(config,videoURL,destvideo,apikey,uuid,thn,'video',cli,logging)
         if not success:
             destvideo =''
     if marqueeURL !='':
-        success = apicalls.getImageAPI(marqueeURL,destmarquee,apikey,uuid,thn,'marquee',cli,logging)
+        success = apicalls.getImageAPI(config,marqueeURL,destmarquee,apikey,uuid,thn,'marquee',cli,logging)
         if not success:
             destmarquee =''
     if bezelURL !='':
@@ -907,12 +907,12 @@ def findMissingGames(config,systemid,havelist,apikey,uuid,systems,queue,doDownlo
     f.close()
     return
 
-def getSystemIcon(systemid,apikey,uuid,thn,cli):
+def getSystemIcon(config,systemid,apikey,uuid,thn,cli):
     dpath = str(Path.home())+'/.retroscraper'
     dfile = dpath+'/system.png'
     if ospath.isfile(dfile):
         remove(dfile)
-    apicalls.getImageAPI('/api/medias/'+str(systemid)+'/system/logo.png',dfile,apikey,uuid,thn,'syslogo',cli,logging)
+    apicalls.getImageAPI(config,'/api/medias/'+str(systemid)+'/system/logo.png',dfile,apikey,uuid,thn,'syslogo',cli,logging)
     return dfile
 
 def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,selectedSystems,scanqueue,origrompath,trans,thn,cli=False):
@@ -972,7 +972,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                 logging.info ('###### FOUND '+str(len(romfiles))+' ROMS FOR SYSTEM')
             else:
                 logging.info ('###### GOING FOR REMOTE PATH '+spath)
-                remotefiles = remote.listRemoteDir(spath,logging,thn)
+                remotefiles = remote.listRemoteDir(config,spath,logging,thn)
                 romfiles = [x for x in sorted(remotefiles) if (('/images' not in x) and ('/videos' not in x) and ('/marquees' not in x) and ('.cfg' not in x) and ('.save' not in x) and ('gamelist.xml' not in x))]
         except Exception as e:
             logging.error ('####### CANNOT OPEN SYSTEM DIR '+system['path']+' ERROR '+str(e))
@@ -991,7 +991,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             sysid=75
         else:
             sysid=system['id'][0]
-        getSystemIcon(sysid,apikey,uuid,thn,cli)
+        getSystemIcon(config,sysid,apikey,uuid,thn,cli)
         q.put(['sysImage','source',hpath+'system.png'])
         q.put(['sysImageGame','source',hpath+'system.png'])
         q.put(['sysLabel','text','System : '+str(system['name'])+' - '+str(len(romfiles))+' files'])
@@ -1022,15 +1022,15 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                 logging.info ('###### DELETED DIRECTORY MARQUEES ')
             except Exception as e:
                 logging.info ('###### COULD NOT DELETE DIRECTORY MARQUEES '+str(e))
-        if not pathExists(system['path']+'images/',logging,thn):
-            makedir(system['path']+'images/',logging,thn)
-        if not pathExists (system['path']+'videos/',logging,thn):
-            makedir(system['path']+'videos/',logging,thn)
-        if not pathExists (system['path']+'marquees/',logging,thn):
-            makedir(system['path']+'marquees/',logging,thn)
+        if not pathExists(config,system['path']+'images/',logging,thn):
+            makedir(config,system['path']+'images/',logging,thn)
+        if not pathExists (config,system['path']+'videos/',logging,thn):
+            makedir(config,system['path']+'videos/',logging,thn)
+        if not pathExists (config,system['path']+'marquees/',logging,thn):
+            makedir(config,system['path']+'marquees/',logging,thn)
         bpath = system['path'].replace('/roms/','/overlays/')+'bezels/'
-        if not pathExists(bpath,logging,thn):
-            makedir(bpath,logging,thn)
+        if not pathExists(config,bpath,logging,thn):
+            makedir(config,bpath,logging,thn)
 
         currFileIdx = 0
         totalfiles = len(romfiles)
@@ -1154,7 +1154,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             result = copyfile(tmpxmlFile,outXMLFile)
         else:
             logging.info ('####### COPYING GAMELIST.XML TO REMOTE DESTINATION IN THREAD '+str(thn))
-            remote.copyToRemote(tmpxmlFile,outXMLFile,thn,logging)
+            remote.copyToRemote(config,tmpxmlFile,outXMLFile,thn,logging)
         remove(tmpxmlFile)
         logging.info ('###### COPIED NEW GAMELIST IN THREAD '+str(thn))
         try:
