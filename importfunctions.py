@@ -13,18 +13,18 @@ def handleImportError(error):
         return
     if 'paramiko' in error.lower():
         print ('Installing paramiko, please wait')
-        try:
-            result = subprocess.call (['rustc','--version'])
-        except:
-            result =1
-        if result !=0:
-            print ('Installing Rust')
-            subprocess.call(['wget','https://sh.rustup.rs','-O','/tmp/rust.sh'])
-            subprocess.call(['sh','/tmp/rust.sh'])
-            print ('Now run:')
-            print ('source "$HOME/.cargo/env"')
-            print ('And execute retroscraper again, sorry')
-            sys.exit()
+        #try:
+        #    result = subprocess.call (['rustc','--version'])
+        #except:
+        #    result =1
+        #if result !=0:
+        #    print ('Installing Rust')
+        #    subprocess.call(['wget','https://sh.rustup.rs','-O','/tmp/rust.sh'])
+        #    subprocess.call(['sh','/tmp/rust.sh'])
+        #    print ('Now run:')
+        #    print ('source "$HOME/.cargo/env"')
+        #    print ('And execute retroscraper again, sorry')
+        #    sys.exit()
         print ('Installing paramiko')
         subprocess.call([sys.executable,'-m','pip','install','paramiko'])
         return
