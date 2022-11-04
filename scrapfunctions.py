@@ -955,6 +955,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         writeFile = open(tmpxmlFile,'w',encoding="utf-8")
         writeFile.write("<?xml version='1.0' encoding='utf-8'?><gameList>")
         romfiles=[]
+        q.put(['gamelabel','text','SCANNING DIRECTORY'])
         try:
             spath = system['path']
             if spath[-1] != '/':
@@ -1004,16 +1005,19 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             saveConfig(config,q)
         if config['config']['cleanmedia']:
             try:
+                q.put(['gamelabel','text','DELETING IMAGES'])
                 rmtree(system['path']+'images/')
                 logging.info ('###### DELETED DIRECTORY IMAGES ')
             except Exception as e:
                 logging.info ('###### COULD NOT DELETE DIRECTORY IMAGES '+str(e))
             try:
+                q.put(['gamelabel','text','DELETING VIDEOS'])
                 rmtree(system['path']+'videos/')
                 logging.info ('###### DELETED DIRECTORY VIDEOS ')
             except Exception as e:
                 logging.info ('###### COULD NOT DELETE DIRECTORY VIDEOS '+str(e))
             try:
+                q.put(['gamelabel','text','DELETING MARQUEES'])
                 rmtree(system['path']+'marquees/')
                 logging.info ('###### DELETED DIRECTORY MARQUEES ')
             except Exception as e:
