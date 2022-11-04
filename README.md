@@ -21,7 +21,7 @@ It will create a backup of the gamelist.xml files by default, use the --nobackup
 
 Download all files in one directory. (you can use git clone also :  git clone https://github.com/zayamatias/retroscraper)
 
-Verify you have python 3.7 or greater installed:
+Verify you have python 3.7 or greater installed (windows up to 3.10 due to a current issue with kivy and python 3.11):
 
 python --version
 
