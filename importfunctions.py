@@ -53,7 +53,7 @@ def handleImportError(error):
         print ('Installing curses for Windows, please wait')
         subprocess.call([sys.executable,'-m','pip','install','windows-curses'])
         return
-    if 'PIL' in error.lower():
+    if 'PIL' in error:
         print ('Installing Pillow, please wait')
         subprocess.call([sys.executable,'-m','pip','install','pillow'])
         return
