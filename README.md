@@ -29,17 +29,9 @@ python --version
 
 Excute as 'python retroscraper.py' (or python3 retroscraper.py). 
 
-Make sure you have installed all dependencies:
-
-pip install -r requirements.txt (or python3 -m pip install requirements.txt)
-
-Under Linux (rpi specifically) make sure mtdev is installed:
-
-sudo apt-get install libmtdev-dev
-
 ### Troubleshooting
 
-If the application seems not to be starting, you can find the logs under your home directory (user directory in windows) under the .kivy/logs directory. This should help you understanding the issue.
+If the application seems not to be starting, you can find the logs under your home directory (user directory in windows) under the .kivy/logs directory. This should help you understanding and report the issue.
 
 ## GUI Mode
 
