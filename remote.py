@@ -8,10 +8,10 @@ from queue import Queue
 from threading import Thread
 from time import sleep
 try:
-    import netifaces
+    import ifaddr
 except Exception as e:
     handleImportError(str(e))
-    import netifaces
+    import ifaddr
 try:
     import paramiko
 except Exception as e:
@@ -258,14 +258,14 @@ def checkEsIsPresent(ip,logging):
 def getNetInfo():
     myip =''
     snet = ''
-    ifaces = netifaces.interfaces()
+    ifaces = ifaddr.get_adapters()
+    #ifaces = netifaces.interfaces()
+    #addr = netifaces.ifaddresses(iface)
     for iface in ifaces:
-        addr = netifaces.ifaddresses(iface)
-        if 2 in addr.keys():
-            if addr[2][0]['addr']!='127.0.0.1':
-                myip = addr[2][0]['addr']
-                snet = addr[2][0]['netmask']
-                #print (iface, myip,snet)
+        for ip in iface.ips:
+            if ('.' in ip.ip) and ('lo' not in ip.nice_name):
+                print (ip)
+    sys.exit()
     return myip,snet
 
 def testPort(ip,port,thrn,tq,sq):

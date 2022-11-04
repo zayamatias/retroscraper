@@ -7,9 +7,9 @@ def handleImportError(error):
     if result !=0:
         print ('If pip is not installed pls folow these instructions https://pip.pypa.io/en/stable/installation/')
         sys.exit()    
-    if 'netifaces' in error.lower():
-        print ('Installing netifaces, please wait')
-        subprocess.call([sys.executable,'-m','pip','install','netifaces'])
+    if 'ifaddr' in error.lower():
+        print ('Installing ifaddr, please wait')
+        subprocess.call([sys.executable,'-m','pip','install','ifaddr'])
         return
     if 'paramiko' in error.lower():
         print ('Installing paramiko, please wait')
