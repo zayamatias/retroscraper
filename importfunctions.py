@@ -49,6 +49,10 @@ def handleImportError(error):
         print ('Installing googletrans, please wait')
         subprocess.call([sys.executable,'-m','pip','install','googletrans==4.0.0rc1'])
         return
+    if '_curses' in error.lower():
+        print ('Installing curses for Windows, please wait')
+        subprocess.call([sys.executable,'-m','pip','install','windows-curses'])
+        return
     else:
         print ('There seems to be a module which has not be installed:')
         print (error)
