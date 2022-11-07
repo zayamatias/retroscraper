@@ -63,6 +63,7 @@ The =Remote= tab allows you to scan a remote system, press the 'look for remote 
 
 ![image](https://user-images.githubusercontent.com/32246591/200381495-56869edb-c254-4e02-9432-8a06a6ae9af0.png)
 
+Disclaimer: First run on a remote system via SMB will be slo, specially if you have large files (such as ISO's), as retroscraper will get each file one by one to calculate its checksum. As the files get scanned and checksums stored in the lcoal DB, subsequent runs should be much faster.
 
 ### Configuatrion items:
 
