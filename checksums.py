@@ -6,6 +6,7 @@ import sqlite3 as sl
 from pathlib import Path as Path
 import logging
 import remote
+import os
 
 
 def getRemoteChksums(config,filepath,logging,thn):
@@ -28,16 +29,14 @@ def getRemoteChksums(config,filepath,logging,thn):
             crc = remote.runRemoteCommand (ip,'crc32 "'+chkfile+'"',thn,logging)
             crc = crc.replace('\n','')
         return sha1.split(' ')[0].upper(),md5.split(' ')[0].upper(),crc.split(' ')[0].upper()
-    if 'smb://' in chkfile:
+    if 'smb://' in filepath:
         ip,chkfile = remote.getFileBits(filepath,'smb://',thn)
         logging.info('###### THIS IS A SMB CALCULATION FOR '+str(chkfile)+' AT '+ip+' THREAD['+str(thn)+']')
-        sha1= remote.runRemoteCommand (ip,'sha1sum -b "'+chkfile+'"',thn,logging)
-        sha1 = sha1.replace('\n','')
-        md5 = remote.runRemoteCommand (ip,'md5sum "'+chkfile+'"',thn,logging)
-        md5 = md5.replace('\n','')
-        crc = remote.runRemoteCommand (ip,'crc32 "'+chkfile+'"',thn,logging)
-        crc = crc.replace('\n','')
-        return sha1.split(' ')[0].upper(),md5.split(' ')[0].upper(),crc.split(' ')[0].upper()
+        localfilename = remote.getSMBfile(config,ip,chkfile,thn,logging)
+        rsha1,rmd5,rcrc = calculate(config,localfilename,logging,thn)
+        os.remove(localfilename)
+        return rsha1,rmd5,rcrc
+        
 
 def calculate(config,file,logging,thn):
     if not remote.testPathIsRemote(file,logging,thn):
@@ -122,7 +121,7 @@ def getfromDB(config,file,logging,thn):
         if rsha1!='':
             sql = 'REPLACE INTO CSUMS (filename,sha1,md5,crc) VALUES (?,?,?,?)'
             try:
-                efile = efile.encode().decode('utf-8')
+                efile = file.encode().decode('utf-8')
             except:
                 efile =''
             values = (efile,rsha1,rmd5,rcrc)
