@@ -59,6 +59,9 @@ last but not least, the =Configuration= tab, allows you to configure the tool to
 
 ![image](https://user-images.githubusercontent.com/32246591/162164152-a4cfd3bf-bdf8-4005-bcf0-132c5f2a9eb7.png)
 
+The =Remote= tab allows you to scan a remote system, press the 'look for remote systems' button. Once done and at least oe is found, press 'START SCRAPING'. From teh gui it only works in SMB (which is rather slow). From cli you can use SSH if it is enabled in the remote system.
+
+
 ### Configuatrion items:
 
 #### Systems File: 
@@ -131,7 +134,7 @@ Since latest version, RetroScraper will autoamtically generate a backup of your 
 
 #### Scan remote system
 
---remote USER PASSWORD : will search the local network for an available retropie system and scrap it. For the moment it only works if SSH is enabled in the remote system.
+--remote USER PASSWORD : will search the local network for an available retropie system and scrap it. If you put teh wrong credentials, it will default to SMB (as well as if SSH is not enabled in the remote system)
 
 #### CLI Specific flags:
 
