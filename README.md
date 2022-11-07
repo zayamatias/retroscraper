@@ -61,6 +61,8 @@ last but not least, the =Configuration= tab, allows you to configure the tool to
 
 The =Remote= tab allows you to scan a remote system, press the 'look for remote systems' button. Once done and at least oe is found, press 'START SCRAPING'. From teh gui it only works in SMB (which is rather slow). From cli you can use SSH if it is enabled in the remote system.
 
+![image](https://user-images.githubusercontent.com/32246591/200381495-56869edb-c254-4e02-9432-8a06a6ae9af0.png)
+
 
 ### Configuatrion items:
 
