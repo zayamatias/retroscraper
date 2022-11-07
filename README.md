@@ -65,6 +65,8 @@ The =Remote= tab allows you to scan a remote system, press the 'look for remote 
 
 Disclaimer: First run on a remote system via SMB will be slo, specially if you have large files (such as ISO's), as retroscraper will get each file one by one to calculate its checksum. As the files get scanned and checksums stored in the lcoal DB, subsequent runs should be much faster.
 
+Oh! also, due to the choice of bezel directories, and due to the fact that this directory is not exposed in teh smb shares, bezels will not work when running in SMB mode. I'll have a look on how to overcome this.
+
 ### Configuatrion items:
 
 #### Systems File: 
