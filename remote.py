@@ -37,16 +37,26 @@ def OpenFile(filename,mode,logging,thn):
 def remotePathExists(config,path,ip,logging,thn):
     logging.info ('###### CHECKING IF REMOTE PATH EXISTS THREAD['+str(thn)+']')
     logging.info ('###### GOING TO CONNECT TO IP '+str(ip)+' IN THREAD ['+str(thn)+']')
-    pmsshClient = buildSSHClient(config,ip,logging,thn)
-    try:
-        ftp_client=pmsshClient.open_sftp()
-        ftp_client.chdir(path)
-        ftp_client.close()
-        pmsshClient.close()
-        return True
-    except Exception as e:
-        pmsshClient.close()
-        return False
+    if 'ssh:' in path:
+        pmsshClient = buildSSHClient(config,ip,logging,thn)
+        try:
+            ftp_client=pmsshClient.open_sftp()
+            ftp_client.chdir(path)
+            ftp_client.close()
+            pmsshClient.close()
+            return True
+        except Exception as e:
+            pmsshClient.close()
+            return False
+    if 'smb:' in path:
+        ip,cpath = getFileBits(path,'smb://',thn)
+        prefix = path[:path.index(ip)+len(ip)+1]
+        check = listRemoteDirSMB(config,prefix,ip,cpath,thn,logging,False)
+        if check!=None:
+            return True
+        else:
+            return False
+
 
 def buildSSHClient(config,ip,logging,thn):
     logging.info ('###### BULIDING SSH CLIENT IN THREAD['+str(thn)+']')
@@ -61,8 +71,6 @@ def buildSSHClient(config,ip,logging,thn):
         logging.info ('###### CLIENT CONNECTED IN THREAD ['+str(thn)+']')
     except Exception as e:
         logging.error ('###### CANNOT CONNECT TO REMOTE SERVER ['+str(ip)+'] VIA SSH ['+str(e)+']  IN THREAD ['+str(thn)+']')
-        print ('Cannot connect to remote server, plese check credentials')
-        sys.exit()
         pmsshClient = None
     return pmsshClient
 
@@ -79,14 +87,69 @@ def testPathIsRemote(mypath,logging,thn):
         logging.info ('###### NO THREAD['+str(thn)+']')
         return False
 
+def removeSSHDir(config,path,logging,thn):
+    return
+
+def removeSMBDir(config,path,logging,thn):
+    nosmb = path.replace('smb://','')
+    ip = nosmb[:nosmb.index('/')]
+    noip = nosmb.replace(ip+'/','')
+    share = noip[:noip.index('/')]
+    fpath = noip[noip.index('/'):]
+    logging.info ('###### DOING SMB CREATE DIR FOR '+path+' IN THREAD '+str(thn))
+    conn = SMBConnection('Anonymous','','retropie','retropie')
+    logging.info ('###### CONNECTING VIA SMB TO '+str(ip))
+    conn.connect(ip)
+    try:
+        conn.deleteFiles(share,fpath+'*',)
+    except Exception as e:
+        logging.error ('###### CANNOT REMOVE CONTENTS OF '+fpath+' IN SHARE '+share+' ('+str(e)+')')
+    
+    return
+
+def removedir(config,path,logging,thn):
+    if 'ssh://' in path:
+        removeSSHDir(config,path,logging,thn)
+    if 'smb://' in path:
+        removeSMBDir(config,path,logging,thn)
+    return
+
 
 def makeDirSSH(config,ip,path,thn,logging):
     cmd = 'mkdir -p \''+path+'\''
     logging.info('###### GOING TO CREATE REMOTE DIR SSH '+path+' WITH COMMAND '+cmd+' IN THREAD ['+str(thn)+']')
     runRemoteCommand(config,ip,cmd,thn,logging)
 
+def getSMBfile(config,ip,chkfile,thn,logging):
+    tpath = chkfile[1:]
+    share = tpath[:tpath.index('/')]
+    filename = tpath[tpath.index('/'):]
+    logging.info ('###### DOING SMB GET FILE FOR '+filename+' IN THREAD '+str(thn))
+    conn = SMBConnection('Anonymous','','retropie','retropie')
+    logging.info ('###### CONNECTING VIA SMB TO '+str(ip))
+    conn.connect(ip)
+    outfilename = str(Path.home())+'/.retroscraper/filetmp/tmpfile'+str(thn)+'.bin'    
+    outfile = open(outfilename,'wb')
+    conn.retrieveFile(share,filename,outfile)
+    outfile.close()
+    return outfilename
 
-def makeDirSMB(ip,path,thn,logging):
+
+def makeDirSMB(config,ip,path,thn,logging):
+    logging.info ('###### DOING SMB CREATE DIR FOR '+path+' IN THREAD '+str(thn))
+    conn = SMBConnection('Anonymous','','retropie','retropie')
+    logging.info ('###### CONNECTING VIA SMB TO '+str(ip))
+    conn.connect(ip)
+    if path[-1]=='/':
+        path=path[:-1]
+    if path[0]=='/':
+        path=path[1:]
+    rpath = path[path.index('/')+1:]
+    share = path[:path.index('/')]
+    try:
+        conn.createDirectory(share,rpath)
+    except:
+        logging.error ('###### CANNOT CREATE REMOTE DIR '+path+' IN SHARE '+share)
     return
 
 
@@ -138,6 +201,26 @@ def copyToRemote (config,orig,dest,thn,logging):
             logging.error ('###### COULD NOT COPY TO REMOTE '+orig+' TO '+dest+' IN THREAD ['+str(thn)+']')
         pmsshClient.close()
     else:
+        nosmb = dest.replace('smb://','')
+        ip=nosmb[:nosmb.index('/')]
+        path = nosmb.replace(ip,'')
+        logging.info ('###### DOING SMB COPY FILE FOR '+dest+' IN THREAD '+str(thn))
+        conn = SMBConnection('Anonymous','','retropie','retropie')
+        logging.info ('###### CONNECTING VIA SMB TO '+str(ip))
+        conn.connect(ip)
+        if path[-1]=='/':
+            path=path[:-1]
+        if path[0]=='/':
+            path=path[1:]
+        rpath = path[path.index('/')+1:]
+        share = path[:path.index('/')]
+        try:
+            infile = open(orig,'rb')
+            conn.storeFile(share,rpath,infile)
+            infile.close()
+        except:
+            logging.error ('###### CANNOT CREATE REMOTE DIR '+rpath+' IN SHARE '+share)
+        return
         logging.info ('###### COPYING LOCAL FILE '+orig+' TO SMB DESTINATION '+dest+' THREAD['+str(thn)+'}')
     return
 
@@ -184,8 +267,9 @@ def listRemoteDir(config,path,logging,thn):
             myfiles.append('ssh://'+ip+tfile)
 
     if 'smb:' in path:
-        ip,chpath = getFileBits(path,'ssh://',thn)
-        myfiles = listRemoteDirSMB(ip,chpath,thn,logging)
+        ip,chpath = getFileBits(path,'smb://',thn)
+        prefix = path[:path.index(ip)+len(ip)+1]
+        myfiles = listRemoteDirSMB(config,prefix,ip,chpath,thn,logging)
     if myfiles:
         return myfiles
 
@@ -195,26 +279,53 @@ def listRemoteDirSSH (config,ip,path,thn,logging):
     del tmpfileslist[-1]
     return tmpfileslist
 
-def listRemoteDirSMB (config,ip,path,logging):
-    return runRemoteCommand (config,ip,'ls -1 '+path,logging)
+def listRemoteDirSMB (config,prefix,ip,path,thn,logging,returnlist=True):
+    logging.info ('###### DOING SMB LIST DIR FOR '+path+' IN THREAD '+str(thn))
+    conn = SMBConnection('Anonymous','','retropie','retropie')
+    logging.info ('###### CONNECTING VIA SMB TO '+str(ip))
+    conn.connect(ip)
+    if path[-1]=='/':
+        path=path[:-1]
+    if path[0]=='/':
+        path=path[1:]
+    rpath = path[path.index('/')+1:]
+    share = path[:path.index('/')]
+    listfiles=[]
+    try:
+        files = conn.listPath(share,rpath)
+    except:
+        logging.info ('###### COULD NOT READ REMOTE SMB PATH '+rpath+' IN SHARE  '+share)
+        return None
+    logging.info ('######  FOUND THESE FILES '+str(files))
+    for file in files:
+        if file.filename !='.' and file.filename !='..':
+            listfiles.append(prefix+share+'/'+rpath+'/'+file.filename)
+    return listfiles
+
 
 
 def getRemoteEsConfig(config,ip,logging,thn):
     destconfig = str(Path.home())+'/.retroscraper/es_systems.cfg'    
-    logging.info ('###### GOING TO DO CONFIG READ')
+    logging.info ('###### GOING TO DO REMOTE CONFIG READ')
     ## try via ssh
     myconfig = runRemoteCommand(config,ip,'cat /etc/emulationstation/es_systems.cfg',thn,logging)
+    logging.info ('###### GOT ['+str(myconfig)+'] AS REMOTE CONFIG')
     ## To skip SSH
     ## myconfig = None
     if myconfig:
+        logging.info ('###### THERE IS A CONFIG SO REPLACE EVERY PATH BY SSH')
         myconfig = myconfig.replace('<path>','<path>ssh://'+ip)
     else:
+        logging.info ('###### CANNOT GET CONFIG BY SSH LET\'S TRY SMB!')
         conn = SMBConnection('Anonymous','','retropie','retropie')
+        logging.info ('###### CONNECTING VIA SMB TO '+str(ip))
         conn.connect(ip)
         files = conn.listPath('configs','all/emulationstation')
-        hpath = str(Path.home())+'/.retroscraper/'    
+        logging.info ('###### GOT THIS LIST OF FILES '+str(files))
         for file in files:
+            logging.info ('###### CHECKING FILE '+str(file))
             if file.filename=='es_systems.cfg':
+                logging.info ('###### FOUND THE CONFIGURATION FILE!')
                 outfile = open(destconfig,'wb')
                 myconfig = conn.retrieveFile('configs','all/emulationstation/'+file.filename,outfile,timeout=300)
                 outfile.close()
@@ -222,21 +333,29 @@ def getRemoteEsConfig(config,ip,logging,thn):
                 myconfig = infile.read()
                 infile.close()
                 myconfig = myconfig.replace('<path>/home/pi/RetroPie','<path>smb://'+ip)
+                logging.info ('###### FILE READ AND REPLACED PATHS WITH SMB!')
+                break
         if not myconfig:
-            myconfig='<?xml version="1.0"?>\n<systemList>\n'
-            systag='\t<system>\n\t\t<name>$NAME</name>\n\t\t<extension>$EXTENSIONS</extension>\n\t\t<platform>$NAME</platform>\n\t\t<path>$PATH</path>\n\t</system>\n'
+            logging.info ('###### I COULD NOT FIND A CONFIG FILE, SO I\'M CREATING ONE')
             systems = conn.listPath('roms','')
-            for system in systems:
-                path = 'smb://'+ip+'/roms/'+system.filename
-                sname=system.filename
-                extns = apicalls.getSystemsExtensions(sname)
-                thistag=systag.replace('$NAME',sname).replace('$PATH',path).replace('$EXTENSIONS',extns)
-                myconfig=myconfig+thistag
-            myconfig=myconfig+'</systemList>'
+            if systems:
+                myconfig='<?xml version="1.0"?>\n<systemList>\n'
+                systag='\t<system>\n\t\t<name>$NAME</name>\n\t\t<extension>$EXTENSIONS</extension>\n\t\t<platform>$NAME</platform>\n\t\t<path>$PATH</path>\n\t</system>\n'
+                for system in systems:
+                    path = 'smb://'+ip+'/roms/'+system.filename
+                    sname=system.filename
+                    extns = apicalls.getSystemsExtensions(sname)
+                    thistag=systag.replace('$NAME',sname).replace('$PATH',path).replace('$EXTENSIONS',extns)
+                    myconfig=myconfig+thistag
+                myconfig=myconfig+'</systemList>'
+                logging.info ('###### FILE WAS CREATED INTERNALLY')
+            else:
+                logging.info ('###### I COULD NOT FIND REMOTE SYSTEMS, SORRY!')
     if not myconfig:
         logging.error('###### COULD NOT FIND REMOTE CONFIG')
         return ''
     else:
+        logging.info ('###### WRITING LOCALLY '+str(myconfig))
         outfile = open(destconfig,'w')
         outfile.write (myconfig)
         outfile.close()
@@ -277,7 +396,9 @@ def testPort(ip,port,thrn,tq,sq):
     return
 
 def scan (logging):
+    logging.info ('###### STARTING SCANNING OF REMOTE SYSTEMS')
     ip,snet = getNetInfo()
+    logging.info ('###### MY IP IS '+str(ip)+' WITH SUBNET '+str(snet))
     tq = Queue()
     sq = Queue()
     foundlist =[]
@@ -285,11 +406,13 @@ def scan (logging):
     threadList =[None]*totthreads
     n = 0
     done = False
+    logging.info ('###### STARTING!')
     while not done:
         if n<256:
             for thrn in range (0,totthreads):
                 if threadList[thrn]==None:
                     ipscan = ip[:ip.rindex('.')+1]+str(n)
+                    logging.info ('###### TRYING IP '+str(ipscan))
                     runthread = Thread(target=testPort,args=(ipscan,445,thrn,tq,sq))
                     threadList[thrn]=runthread
                     runthread.start()
@@ -304,12 +427,14 @@ def scan (logging):
             value = sq.get_nowait()
             if value !=ip:
                 if checkEsIsPresent(value,logging):
+                    logging.info ('###### FOUND IP '+str(value))
                     foundlist.append(value)
         except:
            pass
         if all(x is None for x in threadList) and n>255:
             done = True
         sleep(0.1)
+    logging.info ('###### DONE SCANNING!')
     return foundlist
 
 

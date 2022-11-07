@@ -31,6 +31,12 @@ from pathlib import Path as Path
 import remote
 import os
 
+def removedir(config,path,logging,thn):
+    if not remote.testPathIsRemote(path,logging,thn):
+        rmtree(path)
+    else:
+        remote.removedir(config,path,logging,thn)
+
 def pathExists(config,path,logging,thn):
     if remote.testPathIsRemote(path,logging,thn):
         if 'ssh://' in path:
@@ -1006,19 +1012,19 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         if config['config']['cleanmedia']:
             try:
                 q.put(['gamelabel','text','DELETING IMAGES'])
-                rmtree(system['path']+'images/')
+                removedir(config,system['path']+'images/',logging,thn)
                 logging.info ('###### DELETED DIRECTORY IMAGES ')
             except Exception as e:
                 logging.info ('###### COULD NOT DELETE DIRECTORY IMAGES '+str(e))
             try:
                 q.put(['gamelabel','text','DELETING VIDEOS'])
-                rmtree(system['path']+'videos/')
+                removedir(config,system['path']+'videos/',logging,thn)
                 logging.info ('###### DELETED DIRECTORY VIDEOS ')
             except Exception as e:
                 logging.info ('###### COULD NOT DELETE DIRECTORY VIDEOS '+str(e))
             try:
                 q.put(['gamelabel','text','DELETING MARQUEES'])
-                rmtree(system['path']+'marquees/')
+                removedir(config,system['path']+'marquees/',logging,thn)
                 logging.info ('###### DELETED DIRECTORY MARQUEES ')
             except Exception as e:
                 logging.info ('###### COULD NOT DELETE DIRECTORY MARQUEES '+str(e))
@@ -1075,7 +1081,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                     currFileIdx = currFileIdx+1
                 else:
                     ### RANGE OF THREADS
-                    for thrn in range (0,6):
+                    for thrn in range (0,1):
                         logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
                         if thread_list[thrn]==None:
                             currFileIdx = currFileIdx+1

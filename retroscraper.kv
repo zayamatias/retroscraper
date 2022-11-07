@@ -604,6 +604,16 @@
                                                 id:tochange
                                                 size_hint_y:None
                                                 cols: 1
+                                                Button:
+                                                        id: remoteScan
+                                                        text: 'Look for remote systems'
+                                                        font_name: 'sonic.ttf'
+                                                        font_size: 14
+                                                        on_release: root.remoteScan()
+                                                        size_hint: 1,None
+                                                        disabled: False
+                                                        size: 25,25
+
                         TabbedPanelItem:
                                 id: taberror
                                 text: 'Errors'

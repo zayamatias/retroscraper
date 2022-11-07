@@ -301,6 +301,26 @@ class MainScreen(BoxLayout):
                 sysexit()
         return 
 
+    def remoteScan(self):
+        iplist = remote.scan (logging)
+        if iplist:
+            self.config['config']['SystemsFile']=remote.getRemoteEsConfig(config,iplist[0],logging,'MAIN')
+            logging.info ('###### GOT REMOTE CONFIG AS '+str(self.config['config']['SystemsFile']))
+            if self.config['config']['SystemsFile']=='':
+                self.show_info_popup('Remote systems','Cannot load remote config, are credentials ok?',False)
+            else:
+                logging.info ('###### UPDATING IN MEMORY CONFIG')
+                self.ids['systemsfile'].text= self.config['config']['SystemsFile']
+                logging.info ('UPDATING SYSTEMS')
+                self.systems = scrapfunctions.loadSystems(self.config,self.apikey,self.uuid,self.remoteSystems,self.q,trans,logging)
+                logging.info ('###### UPDATING IN ROM PATH ')
+                self.rompath = scrapfunctions.getAbsRomPath(self.systems[0]['path'],'MAIN')
+                logging.info ('###### NEW ROMPATH IS '+str(self.rompath))
+                self.ids['esrompath'].text = self.rompath
+
+
+        else:
+            self.show_info_popup('Remote systems','Cannot find any remote system, are you sure they are switched on and have SSH enabled?',False)
 
     def initLabels(self):
         global trans
@@ -381,16 +401,24 @@ class MainScreen(BoxLayout):
         ### REMOVEIT
         #config['remote']=False
         try:
+            logging.info ('###### CHECKING IF REMOTE FLAG IS SET IN CONFIG')
             isremote = config['remote']
+            logging.info ('###### IT IS')
         except:
             isremote = False
+            logging.info ('###### IT IS NOT')
+
         if isremote:
-            try:
-                remoteip = config['remoteip']
-            except:
-                iplist = remote.scan (logging)
-                if iplist:
-                    self.config['config']['SystemsFile']=remote.getRemoteEsConfig(iplist[0],logging,thn)
+            logging.info ('###### THIS IS A REMOTE SCAN')
+            iplist = remote.scan (logging)
+            if iplist:
+                logging.info ('###### MACHINE(S) WERE FOUND')
+                self.config['config']['SystemsFile']=remote.getRemoteEsConfig(iplist[0],logging,thn) ## Thread Number 0
+                if self.config['config']['SystemsFile']=='':
+                    print ('Cannot get remote configuration, are credentials ok?')
+            else:
+                logging.info ('###### NO MACHINE(S) WERE FOUND')
+                print ('Could not find any remote machines - Aborting')
         else:
             try:
                 if not os.path.isfile(self.config['config']['SystemsFile']) or '.retroscraper' in config['config']['SystemsFile']:
@@ -953,8 +981,11 @@ if __name__ == '__main__':
             if iplist:
                 print ('Found at least one!')
                 config['config']['SystemsFile']=remote.getRemoteEsConfig(config,iplist[0],logging,'MAIN')
+                if config['config']['SystemsFile']=='':
+                    print ('Could notload remote config, please check credentials. Aborting!')
+                    sysexit()
             else:
-                print ('No remote systems were found!! Quitting!')
+                print ('No remote systems were found!! Aborting!')
                 sysexit()
         elif not os.path.isfile(config['config']['SystemsFile']) or '.retroscraper' in config['config']['SystemsFile']:
             ### Try to locate es_systems:
