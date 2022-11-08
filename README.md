@@ -13,15 +13,17 @@ It will create a backup of the gamelist.xml files by default, use the --nobackup
 
 ## Running the software:
 
+Make sure Rust is installed: https://www.rust-lang.org/tools/install
+
 Download all files in one directory. (you can use git clone also :  git clone https://github.com/zayamatias/retroscraper)
 
 Verify you have python 3.7 or greater installed (windows up to 3.10 due to a current issue with kivy and python 3.11):
 
-python --version
+python3 --version
 
-(Sometimes you will need to replace the command python by python3)
+Excute as 'python3 retroscraper.py'. 
 
-Excute as 'python retroscraper.py' (or python3 retroscraper.py). 
+
 
 ### Troubleshooting
 
