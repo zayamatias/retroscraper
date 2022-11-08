@@ -2,14 +2,8 @@ from importfunctions import handleImportError
 from dataclasses import replace
 import logging
 from re import findall,sub,search
-import uuid
 from xml.sax.saxutils import escape
 from sys import exit as sysexit
-try:
-    from numpy import save
-except Exception as e:
-    handleImportError(str(e))
-    from numpy import save
 from checksums import getChecksums
 from shutil import copyfile,rmtree
 import apicalls
