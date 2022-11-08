@@ -2,7 +2,6 @@ beautifulsoup4==4.11.1
 googletrans==4.0.0rc1
 kivy[sdl2]==2.1.0
 kivy_garden==0.1.5
-numpy==1.21.1
 ifaddr==0.2.0
 Pillow==9.2.0
 requests==2.21.0
