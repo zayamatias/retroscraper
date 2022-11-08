@@ -28,10 +28,6 @@ def handleImportError(error):
         print ('Installing paramiko')
         subprocess.call([sys.executable,'-m','pip','install','paramiko'])
         return
-    if 'numpy' in error.lower():
-        print ('Installing numpy, please wait')
-        subprocess.call([sys.executable,'-m','pip','install','numpy'])
-        return
     if 'smb' in error.lower():
         print ('Installing pysmb, please wait')
         subprocess.call([sys.executable,'-m','pip','install','pysmb'])
