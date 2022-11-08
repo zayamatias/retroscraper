@@ -1081,7 +1081,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                     currFileIdx = currFileIdx+1
                 else:
                     ### RANGE OF THREADS
-                    for thrn in range (0,1):
+                    for thrn in range (0,6):
                         logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
                         if thread_list[thrn]==None:
                             currFileIdx = currFileIdx+1
