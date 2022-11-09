@@ -696,13 +696,6 @@ class MainScreen(BoxLayout):
             else:
                 self.pathnokshown = True
                 self.pathok = True
-
-        #logox=self.startlogox
-        #self.angle += 10
-        #logoy=self.startlogoy+int(sin(radians(self.angle))*10)
-        #if self.angle==360:
-        #    self.angle = 0
-        #self.ids['retroscraperimage'].pos=(logox,logoy)
         try:
             event = self.q.get_nowait()
         except:
@@ -735,7 +728,7 @@ class MainScreen(BoxLayout):
                 else:
                     self.ids[event[0]].color=(1,1,1,1)
                 self.ids[event[0]].reload()
-                ## DELETE FILE IF ALREADY DISPLAYED
+                ## DELETE FILE IF ALREADY DISPLAYED AN FOR REMOTE PURPOSES
                 if os.path.isfile(event[2]) and 'system' not in event[2] and 'filetemp' in event[2]:
                     logging.info ('REMOVING '+event[2])
                     os.remove(event[2])
@@ -893,6 +886,10 @@ if __name__ == '__main__':
         config['config']['language']= argsvals['language'][0].lower()
     except:
         config['config']['language']= 'en'
+    try:
+        config['config']['cleanmedia']= argsvals['cleanmedia']
+    except:
+        config['config']['cleanmedia']= False
 
     try:
         systemstoscan = argsvals['systems'][0].lower().split(',')
