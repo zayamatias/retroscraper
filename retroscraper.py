@@ -736,9 +736,9 @@ class MainScreen(BoxLayout):
                     self.ids[event[0]].color=(1,1,1,1)
                 self.ids[event[0]].reload()
                 ## DELETE FILE IF ALREADY DISPLAYED
-                if os.path.isfile(event[2]) and 'system' not in event[2]:
+                if os.path.isfile(event[2]) and 'system' not in event[2] and 'filetemp' in event[2]:
                     logging.info ('REMOVING '+event[2])
-                    #os.remove(event[2])
+                    os.remove(event[2])
             if event[1]=='scandone':
                 self.callScanThreadEnd(event[2])
             if event[1]=='popup':

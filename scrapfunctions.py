@@ -838,7 +838,7 @@ def getGamelistData(gamelistfile):
                     pc = True
             if gametag.tag.lower()=='favorite':
                 if gametag.text:
-                    myValues.append(("$FAVO","<favorite>true</favorite>"))
+                    myValues.append(("$FAVO","\n\t\t<favorite>true</favorite>"))
                     favo = True
             if gametag.tag.lower()=='lastplayed':
                 if gametag.text:
@@ -927,7 +927,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         print ('COULD NOT FIND ANY SYSTEMS - EXITING')
         return
     getmeout = False
-    emptyGameTag = "<game><rating>$RATING</rating><name>$NAME</name><marquee>$MARQUEE</marquee><image>$IMAGE</image><publisher>$PUBLISHER</publisher><releasedate>$RELEASEDATE</releasedate><players>$PLAYERS</players><video>$VIDEO</video><genre>$GENRE</genre><path>$PATH</path><developer>$DEVELOPER</developer><thumbnail/><desc>$DESCRIPTION</desc>$FAVO<playcount>$PLAYCOUNT</playcount><lastplayed>$LASTPLAY</lastplayed></game>"
+    emptyGameTag = "\n\t<game>\n\t\t<rating>$RATING</rating>\n\t\t<name>$NAME</name>\n\t\t<marquee>$MARQUEE</marquee>\n\t\t<image>$IMAGE</image>\n\t\t<publisher>$PUBLISHER</publisher>\n\t\t<releasedate>$RELEASEDATE</releasedate>\n\t\t<players>$PLAYERS</players>\n\t\t<video>$VIDEO</video>\n\t\t<genre>$GENRE</genre>\n\t\t<path>$PATH</path>\n\t\t<developer>$DEVELOPER</developer>\n\t\t<thumbnail/>\n\t\t<desc>$DESCRIPTION</desc>$FAVO\n\t\t<playcount>$PLAYCOUNT</playcount>\n\t\t<lastplayed>$LASTPLAY</lastplayed>\n\t</game>"
     logging.info ('###### DO ALL SYSTEMS?')
     try:
         doallsystems = (selectedSystems[1]==trans['all'])
@@ -1126,7 +1126,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                 pass
             sleep(0.1)
         logging.info ('###### CLOSING GAMELIST.XML IN THREAD '+str(thn))
-        writeFile.write("</gameList>")
+        writeFile.write("\n</gameList>")
         logging.info ('###### FILE CLOSING GAMELIST.XML IN THREAD '+str(thn))
         writeFile.close()
         ###############################################################################
