@@ -85,21 +85,18 @@ def getfromDB(config,file,logging,thn):
     except Exception as e:
         logging.error ('###### ERROR CONNECTING TO CEHCKSUMS DB '+str(e)+'THREAD['+str(thn)+']')
         return rsha1,rmd5,rcrc
+    logging.info ('###### GETTING VALUES FORM DB THREAD['+str(thn)+']')
+    query = 'SELECT sha1,md5,crc FROM CSUMS WHERE filename=?'
     try:
-        logging.info ('###### GETTING VALUES FORM DB THREAD['+str(thn)+']')
-        query = 'SELECT sha1,md5,crc FROM CSUMS WHERE filename=?'
-        try:
-            qfile = file.encode().decode('utf-8')
-            values=(qfile,)
-            cur = con.execute(query,values)
-            data = cur.fetchall()
-            logging.info ('###### GOT VALUES FORM DB THREAD['+str(thn)+']')
-            for row in data:
-                rsha1 = row[0]
-                rmd5 = row[1]
-                rcrc = row[2]
-        except:
-            pass
+        qfile = file.encode().decode('utf-8')
+        values=(qfile,)
+        cur = con.execute(query,values)
+        data = cur.fetchall()
+        logging.info ('###### GOT VALUES FORM DB THREAD['+str(thn)+']')
+        for row in data:
+            rsha1 = row[0]
+            rmd5 = row[1]
+            rcrc = row[2]
     except Exception as e:
         logging.error ('###### ERROR GETTING FROM DB -> '+str(e)+'THREAD['+str(thn)+']')
         data =[]
@@ -110,9 +107,9 @@ def getfromDB(config,file,logging,thn):
                 filename VARCHAR (500) NOT NULL PRIMARY KEY,
                 sha1 VARCHAR(100),
                 md5 VARCHAR(100),
-                crc VARCHAR(100)
-                );
-                """)   
+                crc VARCHAR(100));
+                """)
+            con.commit()
         except Exception as e:
             logging.info ('###### ERROR CREATING EMPTY INSTANCE OF DB '+str(e)+'THREAD['+str(thn)+']')
     if rsha1=='' or rmd5=='' or rcrc=='':
