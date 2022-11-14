@@ -606,21 +606,28 @@ def getFileInfo(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,loggi
         videoURL = ''
         destvideo = ''
     marqueeURL,destmarquee = getMediaUrl(system['path']+'marquees/',simplefile,result['game']['medias'],['screenmarqueesmall'],logging,thn,['wor','default',])
-    logging.info ('++++++++++++++++ TRYING TO GET BEZELS THREAD['+str(thn)+']')
-    destbezel=''
-    bezelURL=''
-    logging.info ('###### FIRST CASE THREAD['+str(thn)+']')
-    dpath = system['path'].replace('/roms/','/overlays/')+'bezels/'
-    logging.info ('###### CONVERTING '+str(system['path'])+'    '+dpath+' THREAD['+str(thn)+']')
-    bezelURL,destbezel = getMediaUrl(dpath,simplefile,result['game']['medias'],['bezel-16-9'],logging,thn,['wor','default'])
-    if destbezel=='' and config['config']['sysbezels']: ## CONFIG UPDATE
-        sysmedias=[{"url": "/api/medias/"+str(gsysid)+"/system/bezel-16-9(wor).png",
-          "region": "wor",
-          "type": "bezel-16-9",
-          "format": "png"
-        }]
-        bezelURL,destbezel = getMediaUrl(system['path'].replace('/roms/','/overlays/')+'bezels/','system_bezel-'+str(gsysid),sysmedias,['bezel-16-9'],logging,thn,['wor','default'])
-    logging.info ('++++++++++++++++ BACK FROM BEZELS THREAD['+str(thn)+']')
+    try:
+        dobezels = config['config']['bezels']
+    except:
+        dobezels = False
+    if dobezels:
+        logging.info ('++++++++++++++++ TRYING TO GET BEZELS THREAD['+str(thn)+']')
+        destbezel=''
+        bezelURL=''
+        logging.info ('###### FIRST CASE THREAD['+str(thn)+']')
+        dpath = system['path'].replace('/roms/','/overlays/')+'bezels/'
+        logging.info ('###### CONVERTING '+str(system['path'])+'    '+dpath+' THREAD['+str(thn)+']')
+        bezelURL,destbezel = getMediaUrl(dpath,simplefile,result['game']['medias'],['bezel-16-9'],logging,thn,['wor','default'])
+        if destbezel=='' and config['config']['sysbezels']: ## CONFIG UPDATE
+            sysmedias=[{"url": "/api/medias/"+str(gsysid)+"/system/bezel-16-9(wor).png",
+            "region": "wor",
+            "type": "bezel-16-9",
+            "format": "png"
+            }]
+            bezelURL,destbezel = getMediaUrl(system['path'].replace('/roms/','/overlays/')+'bezels/','system_bezel-'+str(gsysid),sysmedias,['bezel-16-9'],logging,thn,['wor','default'])
+        logging.info ('++++++++++++++++ BACK FROM BEZELS THREAD['+str(thn)+']')
+    else:
+        bezelURL=''
     if imageURL !='':
         imglocation = apicalls.getImageAPI(config,imageURL,destimage,apikey,uuid,thn,'ss',cli,logging)
         if not imglocation:
@@ -1100,6 +1107,10 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                 queuefull=False
             except:
                 pass
+            sleep(0.1)
+        ## LOOP OF ALL FILES FINISHED
+        donesystem = False
+        while not donesystem:
             try:
                 value = sq.get_nowait()
                 try:
@@ -1117,14 +1128,9 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
                 except Exception as e:
                     logging.error ('###### UNABLE TO WRITE TO GAMELIST FILE:'+str(e))
             except:
-                pass
-            try:
-                if scanqueue.get_nowait():
-                    donesystem = True
-                    getmeout = True
-            except:
-                pass
+                donesystem = True
             sleep(0.1)
+        
         logging.info ('###### CLOSING GAMELIST.XML IN THREAD '+str(thn))
         writeFile.write("\n</gameList>")
         logging.info ('###### FILE CLOSING GAMELIST.XML IN THREAD '+str(thn))
@@ -1136,9 +1142,9 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             chk  = config['config']['nobackup']
         except:
             logging.info ('###### THERE IS NO VALUE IN CONFIG IN THREAD '+str(thn))
-            chk = True
+            chk = False
             logging.info ('######DEFAULTED TO TRUE IN THREAD '+str(thn))
-        if not chk:
+        if chk:
             logging.info ('###### I NEED TO DO BACKUP IN THREAD '+str(thn))
             while ospath.isfile(outXMLFile+'.'+str(bkcount)):
                 logging.info ('###### FILE '+str(bkcount)+' EXISTS IN THREAD '+str(thn))
@@ -1169,28 +1175,19 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             logging.info ('##### GOING TO FIND MISSING GAMES IN THREAD '+str(thn))
             findMissingGames(config,sysid,havegames,apikey,uuid,systems,q,doDownload)
             logging.info ('##### DONE FINDING MISSING GAMES IN THREAD '+str(thn))
-        if getmeout:
-            if ospath.isfile(hpath+'system.png'):
-                remove(hpath+'system.png')
-            if ospath.isdir(str(Path.home())+'/.retroscraper/imgtmp/'):
-                logging.info ('###### REMOVING TEMP IMAGES DIR')
-                rmtree(str(Path.home())+'/.retroscraper/imgtmp/')
-                logging.info ('###### REMOVED TEMP IMAGES DIR')
-            if ospath.isdir(str(Path.home())+'/.retroscraper/filetmp/'):
-                logging.info ('###### REMOVING TEMP IMAGES DIR')
-                rmtree(str(Path.home())+'/.retroscraper/filetmp/')
-                logging.info ('###### REMOVED TEMP IMAGES DIR')
-            logging.info ('###### INFORMING SCAN DONE IN THREAD '+str(thn))
-            q.put(['scandone','scandone',False])
-            logging.info ('###### INFORMED SCAN DONE IN THREAD '+str(thn))
-            q.put(['gamelabel','text',''])
-            q.put(['gamedesc','text',''])
-            q.put(['gameimage','source',''])
-            q.put(['sysImage','source',''])
-            q.put(['sysImageGame','source',''])
-            q.put(['sysLabel','text',trans['alldone']])
-            q.put(['scandone','scandone',True])
-            return
+    if ospath.isfile(hpath+'system.png'):
+        remove(hpath+'system.png')
+    if ospath.isdir(str(Path.home())+'/.retroscraper/imgtmp/'):
+        logging.info ('###### REMOVING TEMP IMAGES DIR')
+        rmtree(str(Path.home())+'/.retroscraper/imgtmp/')
+        logging.info ('###### REMOVED TEMP IMAGES DIR')
+    if ospath.isdir(str(Path.home())+'/.retroscraper/filetmp/'):
+        logging.info ('###### REMOVING TEMP IMAGES DIR')
+        rmtree(str(Path.home())+'/.retroscraper/filetmp/')
+        logging.info ('###### REMOVED TEMP IMAGES DIR')
+    logging.info ('###### INFORMING SCAN DONE IN THREAD '+str(thn))
+    q.put(['scandone','scandone',False])
+    logging.info ('###### INFORMED SCAN DONE IN THREAD '+str(thn))
     q.put(['gamelabel','text',''])
     q.put(['gamedesc','text',''])
     q.put(['gameimage','source',''])
@@ -1198,8 +1195,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
     q.put(['sysImageGame','source',''])
     q.put(['sysLabel','text',trans['alldone']])
     q.put(['scandone','scandone',True])
-    if ospath.isfile(hpath+'system.png'):
-        remove(hpath+'system.png')
+    return
 
 def getAbsRomPath(testpath,thn):
     #print ('Received path '+testpath)
