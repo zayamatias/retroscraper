@@ -959,7 +959,11 @@ if __name__ == '__main__':
         except:
             pass
         complete = apicalls.getLanguagesFromAPI(apikey,uuid,'MAIN')
-        trans = complete['en']
+        try:
+            trans = complete['en']
+        except:
+            print ('I CANNOT CONNECT TO THE BACKEND - PLEASE TRY AGAIN LATER')
+            sysexit()
         scanqueue = Queue()
         try:
             signal(SIGINT,signal_handler) 
