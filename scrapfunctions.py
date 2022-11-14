@@ -133,50 +133,53 @@ def getInfoFromAPI(system,thisfilename,sha1,md5,crc,apikey,uuid,logging,thn):
                 else:
                     logging.info ('###### ITS NOT AN ARCADE GAMEE '+showfilename+' THREAD['+str(thn)+']')
                     partnames =  sub('[^A-Za-z0-9]+',' ',fname).lower().split()
-                exclude_words = ['trsi','bill','sinclair','part','tape','gilbert','speedlock','erbesoftwares','aka','erbe','iso','psn','soft','crack','dsk','release','z80','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','prototype','pirate','world','fre','h3c','jue','edition','c128','unl','1983','1984','ltd','side','1985','1986','1987','software','disabled','atx','bamcopy','playable','data','boot','xenophobia','code','dump','compilation','cd1','cd2','cd3','cd4','paradox','19xx','1988','1989','1990','1991','1992','1993','1994','1995','1996','manual','csl','defjam','files','pdx','doscopy','bootable','cracktro','flashtro','flt','checksum','error','qtx','aga','corrupt','disk1','disk2','disk3','disk4','disk5','disk6','italy','spain','psx','disc','demo','rev','slus','replicants','germany','france','start','tsth','patch','newgame','sega','beta','hack','rus','h1c','h2c','the','notgame','zzz','and','pal','ntsc','disk','file','inc','fullgame','48k','128k','16k','tap','tzx','usa','japan','europe','d64','t64','c64']
-                sfname = sub("[\(\[].*?[\)\]]", "", fname)
-                sfname = sfname.replace('_',' ').strip()
-                for thissys in system:
-                    logging.info ('###### LOOKING IN SYSTEM '+str(thissys)+' THREAD['+str(thn)+']')
-                    for partname in partnames:
-                        logging.info ('###### LOOKING FOR SYSTEM '+str(partname)+' THREAD['+str(thn)+']')
-                        if len(partname)>3 and not (partname.lower() in exclude_words) :
-                            result = apicalls.getSearch(str(thissys),partname, apikey,uuid,thn)
-                            if result.status_code !=404:
-                                logging.info ('###### FOUND IN THE BACKEND THREAD['+str(thn)+']')
-                                try:
-                                    jsob = jsonloads(result.text)
-                                    #print (jsob)
-                                    respobj = jsob['response']
-                                    #print (respobj)
-                                    logging.info ('###### IT S A GOOD JSON THREAD['+str(thn)+']')
+                if 0 not in system:
+                    exclude_words = ['trsi','bill','sinclair','part','tape','gilbert','speedlock','erbesoftwares','aka','erbe','iso','psn','soft','crack','dsk','release','z80','2000','2001','2002','2003','2004','2005','2006','2007','2008','2009','2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','prototype','pirate','world','fre','h3c','jue','edition','c128','unl','1983','1984','ltd','side','1985','1986','1987','software','disabled','atx','bamcopy','playable','data','boot','xenophobia','code','dump','compilation','cd1','cd2','cd3','cd4','paradox','19xx','1988','1989','1990','1991','1992','1993','1994','1995','1996','manual','csl','defjam','files','pdx','doscopy','bootable','cracktro','flashtro','flt','checksum','error','qtx','aga','corrupt','disk1','disk2','disk3','disk4','disk5','disk6','italy','spain','psx','disc','demo','rev','slus','replicants','germany','france','start','tsth','patch','newgame','sega','beta','hack','rus','h1c','h2c','the','notgame','zzz','and','pal','ntsc','disk','file','inc','fullgame','48k','128k','16k','tap','tzx','usa','japan','europe','d64','t64','c64']
+                    sfname = sub("[\(\[].*?[\)\]]", "", fname)
+                    sfname = sfname.replace('_',' ').strip()
+                    for thissys in system:
+                        logging.info ('###### LOOKING IN SYSTEM '+str(thissys)+' THREAD['+str(thn)+']')
+                        for partname in partnames:
+                            logging.info ('###### LOOKING FOR SYSTEM '+str(partname)+' THREAD['+str(thn)+']')
+                            if len(partname)>3 and not (partname.lower() in exclude_words) :
+                                result = apicalls.getSearch(str(thissys),partname, apikey,uuid,thn)
+                                if result.status_code !=404:
+                                    logging.info ('###### FOUND IN THE BACKEND THREAD['+str(thn)+']')
                                     try:
-                                        myresults = respobj['results']
-                                        logging.info ('###### THERE ARE RESULTS THREAD['+str(thn)+']')
-                                    except:
-                                        logging.error ('###### I GOT SOMETHING STRANGE,, NO RESULTS FOR A SEARCH! THREAD['+str(thn)+']')
+                                        jsob = jsonloads(result.text)
+                                        #print (jsob)
+                                        respobj = jsob['response']
+                                        #print (respobj)
+                                        logging.info ('###### IT S A GOOD JSON THREAD['+str(thn)+']')
+                                        try:
+                                            myresults = respobj['results']
+                                            logging.info ('###### THERE ARE RESULTS THREAD['+str(thn)+']')
+                                        except:
+                                            logging.error ('###### I GOT SOMETHING STRANGE,, NO RESULTS FOR A SEARCH! THREAD['+str(thn)+']')
+                                            continue
+                                    except Exception as e:
+                                        logging.error ('ERROR IN JSON RECEIVED FROM BACKEND '+str(thissys)+' SEARCHING FOR '+partname+' '+str(e)+' THREAD['+str(thn)+']')
                                         continue
-                                except Exception as e:
-                                    logging.error ('ERROR IN JSON RECEIVED FROM BACKEND '+str(thissys)+' SEARCHING FOR '+partname+' '+str(e)+' THREAD['+str(thn)+']')
-                                    continue
-                                for searchable in myresults:
-                                    logging.info ('###### LOOKING FOR MATCHES THREAD['+str(thn)+']')
-                                    if sfname.lower() == searchable['name']['text'].lower():
-                                        logging.info ('###### THERE IS A MATCH THREAD['+str(thn)+']')
-                                        result = apicalls.getURL(searchable['gameURL'], apikey,uuid,thn)
-                                        submitJson = '{"request": {"type": "romnotincluded","data": {"gameUrl":"'+searchable['gameURL']+'","systemid": "'+str(system)+'","filename": "'+filename.encode().decode("utf-8")+'","match":"'+fname+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
-                                        subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging,thn)
-                                        return jsonloads(result.text)['response']
-                                logging.info ('###### THERE IS NO MATCH SO FAR THREAD['+str(thn)+']')
-                logging.info ('###### I GIVE UP LOOKING, WILL INFORM THE BACKEND THREAD['+str(thn)+']')
-                try:
-                    jfilename = filename.encode().decode("utf-8")
-                    submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "'+jfilename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
-                except:
-                    submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
-                logging.info ('###### GOING TO SUBMIT TO BACKEND THREAD['+str(thn)+']')
-                result = apicalls.postSubmit (submitJson,apikey,uuid,logging,thn)
-                logging.info ('###### SUBMITTED TO BACKEND THREAD['+str(thn)+']')
+                                    for searchable in myresults:
+                                        logging.info ('###### LOOKING FOR MATCHES THREAD['+str(thn)+']')
+                                        if sfname.lower() == searchable['name']['text'].lower():
+                                            logging.info ('###### THERE IS A MATCH THREAD['+str(thn)+']')
+                                            result = apicalls.getURL(searchable['gameURL'], apikey,uuid,thn)
+                                            submitJson = '{"request": {"type": "romnotincluded","data": {"gameUrl":"'+searchable['gameURL']+'","systemid": "'+str(system)+'","filename": "'+filename.encode().decode("utf-8")+'","match":"'+fname+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
+                                            subresult = apicalls.postSubmit (submitJson,apikey,uuid,logging,thn)
+                                            return jsonloads(result.text)['response']
+                                    logging.info ('###### THERE IS NO MATCH SO FAR THREAD['+str(thn)+']')
+                    logging.info ('###### I GIVE UP LOOKING, WILL INFORM THE BACKEND THREAD['+str(thn)+']')
+                    try:
+                        jfilename = filename.encode().decode("utf-8")
+                        submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "'+jfilename+'","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
+                    except:
+                        submitJson = '{"request": {"type": "norom","data": {"systemid": "'+str(system)+'","filename": "","SHA1": "'+sha1+'","MD5": "'+md5+'","CRC": "'+crc+'"}}}'
+                    logging.info ('###### GOING TO SUBMIT TO BACKEND THREAD['+str(thn)+']')
+                    result = apicalls.postSubmit (submitJson,apikey,uuid,logging,thn)
+                    logging.info ('###### SUBMITTED TO BACKEND THREAD['+str(thn)+']')
+                else:
+                    logging.info ('###### I DO NOT KNOW WHICH SYSTEM THIS IS SO I DO NTO LOOKUP ANYTHING')
                 response = {"game": {"ratings": [], "dates": [], "names": [{'text':filename,'region':'default'}], "roms": [], "cloneof": "0", "genres": [],\
                             "notgame": "false", "system": {"url": "/api/system/"+str(system[0]), "id": int(system[0])}, "players": {"text": "Unknown"},\
                             "synopsis": [{"text":"Could not find Synopsis","language":"en"}], "editor": {}, "medias": [], "developer": {}, "id":0,\
@@ -447,6 +450,7 @@ def loadSystems(config,apikey,uuid,remoteSystems,q,trans,logging):
                                         break
                                 except:
                                     pass
+                
                 if 'path' in mySystem.keys():
                     ### TODO DISTINCT WINDOWS OR LINUX
                     if mySystem['path'][-1] != '/':
@@ -455,6 +459,9 @@ def loadSystems(config,apikey,uuid,remoteSystems,q,trans,logging):
                     systems.append(mySystem)
                     logging.info('###### FOUND '+str(jsondumps(systems)))
                 else:
+                    mySystem['id']=[0]
+                    systems.append(mySystem)
+                    logging.info('###### FOUND '+str(jsondumps(systems)))
                     q.put(['errorlabel','text',trans['unksystem']+' '+str(mySystem['name'])])
     except Exception as e:
         print ('CANNOT PARSE XML '+str(e))
@@ -915,12 +922,15 @@ def findMissingGames(config,systemid,havelist,apikey,uuid,systems,queue,doDownlo
     return
 
 def getSystemIcon(config,systemid,apikey,uuid,thn,cli):
-    dpath = str(Path.home())+'/.retroscraper'
-    dfile = dpath+'/system.png'
-    if ospath.isfile(dfile):
-        remove(dfile)
-    apicalls.getImageAPI(config,'/api/medias/'+str(systemid)+'/system/logo.png',dfile,apikey,uuid,thn,'syslogo',cli,logging)
+    dfile=''
+    if systemid!=0:
+        dpath = str(Path.home())+'/.retroscraper'
+        dfile = dpath+'/system.png'
+        if ospath.isfile(dfile):
+            remove(dfile)
+        apicalls.getImageAPI(config,'/api/medias/'+str(systemid)+'/system/logo.png',dfile,apikey,uuid,thn,'syslogo',cli,logging)
     return dfile
+    
 
 def writeXML(sq,writeFile,q):
     q.put(['gamelabel','text','WRITING GAMELIST'])
@@ -1058,8 +1068,9 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         else:
             sysid=system['id'][0]
         getSystemIcon(config,sysid,apikey,uuid,thn,cli)
-        q.put(['sysImage','source',hpath+'system.png'])
-        q.put(['sysImageGame','source',hpath+'system.png'])
+        if sysid!=0:
+            q.put(['sysImage','source',hpath+'system.png'])
+            q.put(['sysImageGame','source',hpath+'system.png'])
         q.put(['sysLabel','text','System : '+str(system['name'])+' - '+str(len(romfiles))+' files'])
         q.put(['scrapPB','max',len(romfiles)])
         q.put(['scrapPB','value',0])
