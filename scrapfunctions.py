@@ -922,6 +922,65 @@ def getSystemIcon(config,systemid,apikey,uuid,thn,cli):
     apicalls.getImageAPI(config,'/api/medias/'+str(systemid)+'/system/logo.png',dfile,apikey,uuid,thn,'syslogo',cli,logging)
     return dfile
 
+def writeXML(sq,writeFile,q):
+    q.put(['gamelabel','text','WRITING GAMELIST'])
+    thesegames =[]
+    ## LOOP OF ALL FILES FINISHED
+    donequeue = False
+    while not donequeue:
+        try:
+            value = sq.get_nowait()
+            try:
+                if value:
+                    try:
+                        writeFile.write(value[0]+"")
+                    except:
+                        try:
+                            wvalue = value[0].encode().decode('utf-8')
+                            writeFile.write(wvalue)
+                        except:
+                            pass
+                        
+                    thesegames.append(value[1])
+            except Exception as e:
+                logging.error ('###### UNABLE TO WRITE TO GAMELIST FILE:'+str(e))
+        except:
+            donequeue = True
+    return thesegames
+
+
+def fileProcess(currFileIdx,romfiles,currglvalues,system,q,sq):
+    file = str(romfiles[currFileIdx])
+    try:
+        logging.info ('####### STARTING WITH FILE '+str(file))
+        logfilename = file
+    except:
+        logfilename = ''
+        logging.info ('####### STARTING WITH FILE ')
+    if '/' in file:
+        filename = file[file.rindex('/')+1:]
+    if '\\' in file:
+        filename = file[file.rindex('\\')+1:]
+    if '\\' not in file and '/' not in file:
+        filename = file
+    if '.' in file:
+        filext = file[file.rindex('.'):]
+    else:
+        filext=''
+    if filename in currglvalues:
+        oldValues = currglvalues[filename]
+    else:
+        ### This file was not in the CURRENT XML
+        oldValues=[('$LASTPLAY','0'),('$FAVO',''),('$PLAYCOUNT','0')]
+    logging.info ('####### TRIMMED TO FILE '+logfilename)
+    if (not filext in system['extension']) or ('gamelist.xml' in file.lower()):
+            logging.info ('###### This file ['+logfilename+'] is not in the list of accepted extensions')
+            q.put(['scrapPB','valueincrease'])
+            sq.put ('')
+            return '','',''
+    else:
+        return file,filext,oldValues
+
 def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,selectedSystems,scanqueue,origrompath,trans,thn,cli=False):
     hpath = str(Path.home())+'/.retroscraper/'
     q.put(['gamelabel','text','Scanning Files'])
@@ -958,7 +1017,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             continue
         outXMLFile = system['path']+'gamelist.xml'
         currglvalues = getGamelistData(outXMLFile)
-        tmpxmlFile = hpath+'gamelist.xml'
+        tmpxmlFile = hpath+'gamelist'+str(os.getpid())+'.xml'
         writeFile = open(tmpxmlFile,'w',encoding="utf-8")
         writeFile.write("<?xml version='1.0' encoding='utf-8'?><gameList>")
         romfiles=[]
@@ -1043,94 +1102,52 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
         totalfiles = len(romfiles)
         sq = Queue()
         tq = Queue()
-        donesystem = False
-        thread_list = [None]*5
+        thread_list = [None]*6
         queuefull = False
         havegames=[]
-        while (currFileIdx < totalfiles) and not donesystem:
-            if not queuefull:
-                if currFileIdx >= totalfiles:
-                    donesystem = True
-                else:
-                    file = str(romfiles[currFileIdx])
-                    try:
-                        logging.info ('####### STARTING WITH FILE '+str(file))
-                        logfilename = file
-                    except:
-                        logfilename = ''
-                        logging.info ('####### STARTING WITH FILE ')
-                    if '/' in file:
-                        filename = file[file.rindex('/')+1:]
-                    if '\\' in file:
-                        filename = file[file.rindex('\\')+1:]
-                    if '\\' not in file and '/' not in file:
-                        filename = file
-                    if '.' in file:
-                        filext = file[file.rindex('.'):]
-                    else:
-                        filext=''
-                    if filename in currglvalues:
-                        oldValues = currglvalues[filename]
-                    else:
-                        ### This file was not in the CURRENT XML
-                        oldValues=[('$LASTPLAY','0'),('$FAVO',''),('$PLAYCOUNT','0')]
-                    logging.info ('####### TRIMMED TO FILE '+logfilename)
-                if (not filext in system['extension']) or ('gamelist.xml' in file.lower()):
-                    logging.info ('###### This file ['+logfilename+'] is not in the list of accepted extensions')
-                    q.put(['scrapPB','valueincrease'])
-                    sq.put ('')
-                    currFileIdx = currFileIdx+1
-                else:
-                    ### RANGE OF THREADS
-                    for thrn in range (0,6):
-                        logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
-                        if thread_list[thrn]==None:
+        gamecounter =0 
+        havegames=[]
+        gamecounter = 0
+        while (currFileIdx < totalfiles):
+            for thrn in range (0,6):
+                logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
+                if thread_list[thrn]==None:
+                    file =''
+                    while file =='':
+                        if (currFileIdx < totalfiles):
+                            file,filext,oldValues = fileProcess(currFileIdx,romfiles,currglvalues,system,q,sq)
                             currFileIdx = currFileIdx+1
-                            try:
-                                showfile = file.encode().decode('utf-8')
-                            except Exception as e:
-                                logging.info('###### EXCEPTION '+str(e)+' IN THREAD '+str(thrn))
-                                showfile = ''
-                            logging.info ('###### STARTING FILE '+showfile+' IN THREAD '+str(thrn))
-                            uthrn = (int(system['id'][0])*100000)+(currFileIdx*10)+thrn
-                            thread = Thread(target=getFileInfo,args=(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,uthrn,oldValues,thrn,cli))
-                            thread_list[thrn]=thread
-                            logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
-                            thread.start()
-                            queuefull = not (None in thread_list)
-                            logging.info ('###### IS QUEUE FULL??? '+str(queuefull))
+                        else:
                             break
-            try:
-                value = tq.get_nowait()
-                thread_list[value].join()
-                thread_list[value]=None
-                queuefull=False
-            except:
-                pass
-            sleep(0.1)
-        ## LOOP OF ALL FILES FINISHED
-        donesystem = False
-        while not donesystem:
-            try:
-                value = sq.get_nowait()
+                    if file =='':
+                        break
+                    try:
+                        showfile = file.encode().decode('utf-8')
+                    except Exception as e:
+                        logging.info('###### EXCEPTION '+str(e)+' IN THREAD '+str(thrn))
+                        showfile = ''
+                    logging.info ('###### STARTING FILE '+showfile+' IN THREAD '+str(thrn))
+                    uthrn = (int(system['id'][0])*100000)+(currFileIdx*10)+thrn
+                    thread = Thread(target=getFileInfo,args=(file,system,companies,emptyGameTag,apikey,uuid,q,sq,config,logging,filext,tq,uthrn,oldValues,thrn,cli))
+                    thread_list[thrn]=thread
+                    logging.info ('###### CHECKING THREAD '+str(thrn)+' WHICH HAS VALUE '+str(thread_list[thrn]))
+                    thread.start()
+                    gamecounter = gamecounter +1
+                    if gamecounter == 1000:
+                        havegames = havegames + writeXML(sq,writeFile,q)
+                        gamecounter = 0
+                    sleep (0.1)
+            while any(thread_list):
                 try:
-                    if value:
-                        try:
-                            writeFile.write(value[0]+"")
-                        except:
-                            try:
-                                wvalue = value[0].encode().decode('utf-8')
-                                writeFile.write(wvalue)
-                            except:
-                                pass
-                            
-                        havegames.append(value[1])
-                except Exception as e:
-                    logging.error ('###### UNABLE TO WRITE TO GAMELIST FILE:'+str(e))
-            except:
-                donesystem = True
-            sleep(0.1)
-        
+                    value = tq.get_nowait()
+                    logging.info ('###### QUEUE VALUE '+str(value) )
+                    thread_list[value].join()
+                    thread_list[value]=None
+                    sleep(0.1)
+                except:
+                    pass
+        havegames = havegames + writeXML(sq,writeFile,q)
+
         logging.info ('###### CLOSING GAMELIST.XML IN THREAD '+str(thn))
         writeFile.write("\n</gameList>")
         logging.info ('###### FILE CLOSING GAMELIST.XML IN THREAD '+str(thn))
