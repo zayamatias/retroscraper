@@ -1172,7 +1172,7 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
             logging.info ('###### THERE IS NO VALUE IN CONFIG IN THREAD '+str(thn))
             chk = False
             logging.info ('######DEFAULTED TO TRUE IN THREAD '+str(thn))
-        if chk:
+        if not chk:
             logging.info ('###### I NEED TO DO BACKUP IN THREAD '+str(thn))
             while ospath.isfile(outXMLFile+'.'+str(bkcount)):
                 logging.info ('###### FILE '+str(bkcount)+' EXISTS IN THREAD '+str(thn))
