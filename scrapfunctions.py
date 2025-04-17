@@ -16,6 +16,8 @@ import xml.etree.ElementTree as ET
 from queue import Queue
 from threading import Thread
 from time import sleep
+from sys import platform
+
 try:
     from googletrans import Translator
 except Exception as e:
@@ -1225,11 +1227,12 @@ def scanSystems(q,systems,apikey,uuid,companies,config,logging,remoteSystems,sel
     q.put(['scandone','scandone',True])
     return
 
-def getAbsRomPath(testpath,thn):
-    #print ('Received path '+testpath)
+def getAbsRomPath(testpath, thn):
+    if platform != "win32" and testpath.startswith("~"):
+        testpath = os.path.expanduser(testpath)
     retpath = ''
     if 'roms' in testpath.lower():
-        #print ('YES')
-        retpath = testpath[:testpath.rindex('roms')+4]
-        #print (retpath)
+        i = testpath.lower().rindex('roms')
+        retpath = testpath[:i+4]
+    
     return retpath
